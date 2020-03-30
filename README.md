@@ -15,20 +15,20 @@
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
-## Tips from LinuxAcademy
+## Tips
 - Skip hard questions and come back to them later (flag it in the notepad)
 - Pay attention to the point value of the question. Skip difficult, low-value questions!
 - Use the documentation: https://kubernetes.io/docs
 - Dont be afraid of using sudo -i for root operations to save time.
 - After sshing to a given node (ssh command will be given) don't forget to exit to return to main machine.
-- **WARN**: if the exercises says that you need to find the broken `service`, and only the affected k8s object, describe the `service` search for the selector and find the pod with that one, and that is the failing one even though there may be other kubernetes objects (source: CKAD Practice Exam - Part 3)
+- **WARN**: if the exercises says that you need to find the broken `service`, and only the affected k8s object, describe the `service` search for the selector and find the pod with that one, and that is the failing one even though there may be other kubernetes objects .
 - **WARN**: if it is asked to delete a resource, delete it with `--force`, as it may be requested later to delete it forcefully.
 
-# Tips
+# Cheatsheet
 
 ## Random
-- https://es.wikipedia.org/wiki/Kibibyte
-    - Su nombre proviene de la contracción de kilo binary byte.
+- https://en.wikipedia.org/wiki/Kibibyte
+    - Name comes from the contraction `kilo binary byte`.
     - 1 kibibyte = 1024 B = 2^10 bytes.
     - 1 kilobyte = 1000 B = 10^3 bytes.
     - kibibyte > kilobyte (in bytes)
@@ -176,10 +176,8 @@ key: "Antidisestab\
 
 # Docs to study
 
-Sources
-
+Most of the links were taken from:
 - https://github.com/dgkanatsios/CKAD-exercises
-- https://linuxacademy.com/cp/modules/view/id/305
 - https://github.com/twajr/ckad-prep-notes#tasks-from-kubernetes-doc
 
 ## P1
