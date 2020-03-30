@@ -34,7 +34,7 @@
     - kibibyte > kilobyte (in bytes)
 
 ## tmux && screen
-```md
+```markdown
 # https://www.linode.com/docs/networking/ssh/persistent-terminal-sessions-with-tmux/
 - Prefix: ctrl+b
 - New-window: Prefix + c
@@ -46,7 +46,7 @@
 - Destroy all sessions: tmux kill-server
 ```
 
-```md
+```markdown
 # Screen cheatsheet: https://gist.github.com/jctosta/af918e1618682638aa82
 - Prefix: ctrl-a
 - New-window: Prefix + c
