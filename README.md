@@ -209,7 +209,7 @@ https://kubernetes.io/docs/concepts/services-networking/network-policies/
         matchLabels:
           role: client
 ```
-    - Examples:
+- Examples:
 
 ```yaml
 # Default deny all ingress traffic (in a namespace)
