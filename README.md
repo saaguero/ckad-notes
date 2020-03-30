@@ -508,6 +508,95 @@ https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/
 - Besides describing or seeing the status of a Pod, you can also run `kubectl describe nodes` and search for `OOMKilling`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
+- When you are creating a ConfigMap based on a file, the key in the <data-source> defaults to the filename, and the value defaults to the file content.
+- The total delay from the moment when the ConfigMap is updated to the moment when new keys are projected to the pod can be as long as kubelet sync period (1 minute by default) + ttl of ConfigMaps cache (1 minute by default) in kubelet. `You can trigger an immediate refresh by updating one of the pod’s annotations`.
+- If you use `envFrom` to define environment variables from ConfigMaps, keys that are considered invalid will be skipped. The pod will be allowed to start, but the invalid names will be recorded in the event log `InvalidVariableNames`.
+- Use the option `--from-env-file` to create a ConfigMap from an env-file:
+
+```yaml
+# env-file.properties
+enemies=aliens
+lives=3
+allowed="true"
+
+# Create the configmap and then check it
+# kubectl create configmap config-env-file --from-env-file=env-file.properties
+# kubectl get configmap game-config-env-file -o yaml
+...
+data:
+  allowed: '"true"' # quotation marks are preserved
+  enemies: aliens
+  lives: "3"
+...
+```
+
+- How to use configmaps in pods:
+
+```yaml
+containers:
+- name: test-container
+  image: busybox
+  command: [ "/bin/sh", "-c", "env" ]
+  # command: [ "/bin/sh", "-c", "echo $(SPECIAL_LEVEL_KEY) ] # You can use ConfigMap-defined env in the command section
+  env:
+  - name: SPECIAL_LEVEL_KEY # Define the environment variable
+    valueFrom:
+      configMapKeyRef:
+        name: special-config # The ConfigMap containing the value you want to assign to SPECIAL_LEVEL_KEY
+        key: special.how # Specify the key associated with the value
+---
+  envFrom: # Configure all key-value pairs in a ConfigMap as container environment variables
+  - configMapRef:
+    name: special-config
+---
+  volumeMounts:
+  - name: config-volume
+    mountPath: /etc/config # WARN: If there are some files in this directory, they will be deleted.
+    # Files will be mounted as /etc/config/<config_key_1>.../etc/config/<config_key_N>
+volumes:
+- name: config-volume
+  configMap:
+    name: special-config # Provide the name of the ConfigMap containing the files you want
+---
+  volumeMounts:
+  - name: config-volume
+    mountPath: /etc/config
+    # MY_KEY_1 will be mounted as /etc/config/key_1
+volumes:
+- name: config-volume
+  configMap:
+    name: special-config
+    items:
+    - key: MY_KEY_1
+      path: key_1
+```
+
+https://kubernetes.io/docs/concepts/configuration/secret/
+```yaml
+containers:
+- name: test
+  image: busybox
+  volumeMounts:
+  - name: secret-volume
+    readOnly: true # useful attribute
+    mountPath: "/etc/secret-volume"
+volumes:
+- name: foo
+  secret:
+    secretName: mysecret
+    items:
+    - key: username
+      path: my-group/my-username
+      mode: 0777 # 511 in decimal in case you use json
+```
+- Linux users should add the option -w 0 to base64 commands.
+- username secret is stored under /etc/foo/my-group/my-username file instead of /etc/foo/username. 
+- If .spec.volumes[].secret.items is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed in the items field. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
+- Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are base64 decoded.
+- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the ConfigMapAndSecretChangeDetectionStrategy field in the KubeletConfiguration struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the kubelet sync period + cache propagation delay, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
+- Secret resources reside in a namespace. Secrets can only be referenced by Pods in that same namespace.
+- How to use a `docker` secret type?
+    - You can attach it in a POD, using the field `imagePullSecrets` or better yet, attaching it the default service-account in the desired namespace:  https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 
@@ -580,27 +669,6 @@ https://kubernetes.io/docs/concepts/cluster-administration/logging/
 - Using a node-level logging agent is the most common and encouraged approach for a Kubernetes cluster, because it creates only one agent per node, and it doesn’t require any changes to the applications running on the node. However, node-level logging only works for applications’ standard output and standard error.
 - By having your sidecar containers stream to their own stdout and stderr streams, you can take advantage of the kubelet and the logging agent that already run on each node. The sidecar containers read logs from a file, a socket, or the journald. Each individual sidecar container prints log to its own stdout or stderr stream.
 - Note: Using a logging agent in a sidecar container can lead to significant resource consumption. Moreover, you won’t be able to access those logs using kubectl logs command, because they are not controlled by the kubelet.
-
-https://kubernetes.io/docs/concepts/configuration/secret/
-```yaml
-  volumes:
-  - name: foo
-    secret:
-      secretName: mysecret
-      items:
-      - key: username
-        path: my-group/my-username
-        mode: 0777 # 511 in decimal in case you use json
-```
-- Linux users should add the option -w 0 to base64 commands.
-- username secret is stored under /etc/foo/my-group/my-username file instead of /etc/foo/username. 
-- If .spec.volumes[].secret.items is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed in the items field. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
-- Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are base64 decoded.
-- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the ConfigMapAndSecretChangeDetectionStrategy field in the KubeletConfiguration struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the kubelet sync period + cache propagation delay, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
-- Secret resources reside in a namespace. Secrets can only be referenced by Pods in that same namespace.
-- How to use a `docker` secret type?
-    - You can attach it in a POD, using the field `imagePullSecrets` or better yet, attaching it the default service-account in the desired namespace:
-    - https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 
