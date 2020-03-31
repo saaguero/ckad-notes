@@ -6,24 +6,24 @@
 - Candidate is permitted to drink clear liquids from a label-free clear bottle or a clear glass
 - Candidate is not allowed to wear any electronic device in their ears, on their face or on their body
 - During the exam, Candidate may only run one application - the Chrome/Chromium browser in which the exam is shown
-- Candidate is not allowed to write or enter input on anything (whether paper, electronic device, etc.) outside of the exam console screen
+- Candidate is not allowed to write or enter input on anything (whether paper, electronic device, etc.) outside of the exam console screen.
 
 ## What can we do
-- Root privileges can be obtained by running 'sudo -i'.
-- Rebooting of your server IS permitted at any time.
-- Ctrl+C & and Ctrl+V are not supported in your exam terminal. For Windows: Ctrl+Insert to copy and Shift+Insert to paste.
+- Root privileges can be obtained by running `sudo -i`.
+- Rebooting of your server is permitted at any time.
+- `Ctrl+C` & and `Ctrl+V` are not supported in your exam terminal. For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
 ## Tips
 - For getting the feeling about the browser terminal: https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
-- Skip hard questions and come back to them later (flag it in the notepad)
+- Skip hard questions and come back to them later (flag it in the provided notepad)
 - Pay attention to the point value of the question. Skip difficult, low-value questions!
 - Use the documentation: https://kubernetes.io/docs
 - Dont be afraid of using sudo -i for root operations to save time.
 - After sshing to a given node (ssh command will be given) don't forget to exit to return to main machine.
 - **WARN**: if the exercises says that you need to find the broken `service`, and only the affected k8s object, describe the `service` search for the selector and find the pod with that one, and that is the failing one even though there may be other kubernetes objects .
-- **WARN**: if it is asked to delete a resource, delete it with `--force`, as it may be requested later to delete it forcefully.
+- **WARN**: if it is asked to delete a resource, delete it **without** `--force`, as it may be requested later to delete it forcefully.
 - **WARN**: if a livenessProbe is requested through something like `Implement a liveness-probe which checks the container to be reachable on port 80` it should be implemented as a `tcpSocket` and not an `httpGet`.
 
 # Cheatsheet
@@ -514,7 +514,7 @@ status:
 
 https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
 - The command and arguments that you define in the configuration file override the default command and arguments provided by the container image. If you define args, but do not define a command, the default command is used with your new arguments. If you supply a command but no args for a Container, only the supplied command is used.
-- The environment variable appears in parentheses, "$(VAR)". This is required for the variable to be expanded in the command or args field.
+- The environment variable appears in parentheses, `$(VAR)`. This is required for the variable to be expanded in the command or args field.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 - `Probe with command`
@@ -721,11 +721,20 @@ spec:
 
 https://kubernetes.io/docs/concepts/workloads/controllers/deployment
 
-https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
-
 https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
-
-https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+- Directly accessing the REST API:
+  - Use `kubectl proxy --port=8080`, then do `curl http://localhost:8080/api`
+  - This is recommended instead of doing it manually becaues it verifies identity of apiserver using self-signed cert, so no MITM attacks are possible. It will authenticate to `apiserver` and in the future it may do intelligent client-side local-balancing and failover.
+- Accesing the API from a Pod:
+  - `kubernetes.default.svc` resolves to a `Service IP` which in turn will be routed to an apiserver.
+  - Run `kubectl proxy` in a sidecar containers in the pod or as a background process within the container.
+  - Or use a k8s client library like Go, they will handle locating and authenticating to the apiserver.
+  - Either case will use the credentials of the pod `/var/run/secrets/kubernetes.io/serviceaccount/*`.
+- Accessing services running on the cluster:
+  - Access services, nodes, or pods using the `Proxy Verb`: apiserver does authentication and authorization prior to accessing the remote  service. Use this if the services are not secure enough to expose to the internet, or to gain access to ports on the node IP, or for debugging. Note that proxies may cause problems for some web applications, and only works for HTTP/HTTPS.
+  - `kubectl cluster-info` to get the list of services using the `Proxy Verb`.
+  - You can also have a `kubectl proxy --port=8080` and access a service passing in a the corresponding url like `http://localhost:8080/api/v1/namespaces/kube-system/services/elasticsearch-logging/proxy/`
+  - Syntax: `http://kubernetes_master_address/api/v1/namespaces/namespace_name/services/[https:]service_name[:port_name]/proxy`
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application-introspection/
 - When you bind a pod to a `hostPort` there are a limited number of places that the pod can be scheduled. In most cases, hostPort is unnecessary; try using a `service` object to expose your pod. If you do require hostPort then you can only schedule as many pods as there are nodes in your container cluster.
@@ -810,6 +819,9 @@ https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/
 - `Ambassador`: TODO
 - `Adapter`: TODO
 
+https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
+- Better to see the help usage, `kubectl port-forward --help`
+
 ## P3
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
@@ -838,3 +850,5 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-con
 https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/
 
 https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/
+
+https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
