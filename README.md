@@ -181,15 +181,14 @@ key: "Antidisestab\
     - percentage (based on the replicas value) or a fixed number
 - Not sure if included but review a bit of:
     - HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
-    - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
     - Statefulset
     - Daemonset
+    - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
     - RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
+    - Taints/Tolerations/Affinity
     - Quotas
     - PodDisruptionBudget
     - PriorityClass
-    - Taints/Tolerations/Affinity
-
 
 # Docs to study
 
@@ -276,6 +275,7 @@ https://kubernetes.io/docs/concepts/services-networking/service/
 - ExternalName: Maps the Service to the contents of the externalName field (e.g. foo.bar.example.com), by returning a CNAME record with its value. No proxying of any kind is set up.
 - In the Service spec, externalIPs can be specified along with any of the ServiceTypes. In the example below, “my-service” can be accessed by clients on “80.11.12.10:80” (externalIP:port)
 - Service without selectors, usueful to point to external places or service in a different namespace/cluster. Remember the corresponding Endpoint object is not created automatically.
+- The set of pods that a `service` targets is defined with a label selector, and only equality-based requirement selectors are supported (no set-based support)
 
 ```yaml
 apiVersion: v1
@@ -782,27 +782,25 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
 ## P2
 
 https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/
-- If the pod does not have a ServiceAccount set, it sets the ServiceAccount to default.
-- It adds a volumeSource to each container of the pod mounted at /var/run/secrets/kubernetes.io/serviceaccount.
+- If the pod does not have a ServiceAccount set, it sets the ServiceAccount to `default`.
+- It adds a volumeSource to each container of the pod mounted at `/var/run/secrets/kubernetes.io/serviceaccount`.
 
 https://kubernetes.io/docs/concepts/cluster-administration/logging/
-- Using a node-level logging agent is the most common and encouraged approach for a Kubernetes cluster, because it creates only one agent per node, and it doesn’t require any changes to the applications running on the node. However, node-level logging only works for applications’ standard output and standard error.
-- By having your sidecar containers stream to their own stdout and stderr streams, you can take advantage of the kubelet and the logging agent that already run on each node. The sidecar containers read logs from a file, a socket, or the journald. Each individual sidecar container prints log to its own stdout or stderr stream.
-- Note: Using a logging agent in a sidecar container can lead to significant resource consumption. Moreover, you won’t be able to access those logs using kubectl logs command, because they are not controlled by the kubelet.
+- Using a node-level logging agent is the most common and encouraged approach for a Kubernetes cluster, because it creates only one agent per node, and it doesn’t require any changes to the applications running on the node. However, node-level logging only works for applications' standard output and standard error.
+- By having your `sidecar containers` stream to their own stdout and stderr streams, you can take advantage of the kubelet and the logging agent that already run on each node. The sidecar containers read logs from a file, a socket, or the journald. Each individual sidecar container prints log to its own stdout or stderr stream.
+- Note: Using a logging agent in a sidecar container can lead to significant resource consumption. Moreover, you won't be able to access those logs using kubectl logs command, because they are not controlled by the kubelet.
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 - Labels can be attached to objects at creation time or later on. They can be modified at any time.
 - The name segment is required and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. The prefix is optional. If specified, the prefix must be a DNS subdomain: a series of DNS labels separated by dots (.), not longer than 253 characters in total, followed by a slash (/).
-- The kubernetes.io/ and k8s.io/ prefixes are reserved for Kubernetes core components.
-- Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
-- The set of pods that a `service` targets is defined with a label selector, and only equality-based requirement selectors are supported (no set-based support)
+- The `kubernetes.io/` and `k8s.io/` prefixes are reserved for Kubernetes core components.
 ```yaml
 selector:
-  matchLabels:
+  matchLabels: # equality-based selectors
     component: redis
-  matchExpressions:
+  matchExpressions: # set-based selectors
     - {key: tier, operator: In, values: [cache]}
     - {key: environment, operator: NotIn, values: [dev]}
 ```
@@ -820,7 +818,7 @@ https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/
 - `Adapter`: TODO
 
 https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
-- Better to see the help usage, `kubectl port-forward --help`
+- Better to see the help, `kubectl port-forward --help`
 
 ## P3
 
