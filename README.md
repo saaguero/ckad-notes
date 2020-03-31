@@ -16,6 +16,7 @@
 - Candidates can confirm the time remaining with the proctor directly.
 
 ## Tips
+- For getting the feeling about the browser terminal: https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
 - Skip hard questions and come back to them later (flag it in the notepad)
 - Pay attention to the point value of the question. Skip difficult, low-value questions!
 - Use the documentation: https://kubernetes.io/docs
@@ -23,6 +24,7 @@
 - After sshing to a given node (ssh command will be given) don't forget to exit to return to main machine.
 - **WARN**: if the exercises says that you need to find the broken `service`, and only the affected k8s object, describe the `service` search for the selector and find the pod with that one, and that is the failing one even though there may be other kubernetes objects .
 - **WARN**: if it is asked to delete a resource, delete it with `--force`, as it may be requested later to delete it forcefully.
+- **WARN**: if a livenessProbe is requested through something like `Implement a liveness-probe which checks the container to be reachable on port 80` it should be implemented as a `tcpSocket` and not an `httpGet`.
 
 # Cheatsheet
 
@@ -34,8 +36,10 @@
     - kibibyte > kilobyte (in bytes)
 
 ## tmux && screen
+- Prefer tmux (even if you have to install it). If not possible, fallback to screen.
+
 ```markdown
-# https://www.linode.com/docs/networking/ssh/persistent-terminal-sessions-with-tmux/
+# Tmux: https://www.linode.com/docs/networking/ssh/persistent-terminal-sessions-with-tmux/
 - Prefix: ctrl+b
 - New-window: Prefix + c
 - Split-horizontal: Prefix + "
@@ -44,10 +48,14 @@
 - List sessions: tmux ls
 - Attach session: tmux attach -t 0
 - Destroy all sessions: tmux kill-server
+
+## Inside tmux
+- set mouse # for copy/paste with `Prefix + [` and `Prefix + ]`
+- set synchronize-panes
 ```
 
 ```markdown
-# Screen cheatsheet: https://gist.github.com/jctosta/af918e1618682638aa82
+# Screen: https://gist.github.com/jctosta/af918e1618682638aa82
 - Prefix: ctrl-a
 - New-window: Prefix + c
 - Move between windows: Prefix + n || Prefix + p || Prefix + " || Prefix + <number>
@@ -69,7 +77,9 @@
 grep -Hnri # grep: print file name, print line number, recursive, ignore-case
 
 # vim
-set shiftwidth=2 softtabstop=2 tabstop=2 
+set shiftwidth=2 softtabstop=2 tabstop=2
+set tabstop=2
+set expandtab
 set list
 
 # ubuntu
@@ -109,9 +119,11 @@ complete -F __start_kubectl k
 kubectl get apiservices | grep metrics
 
 # run including a command!
-kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh -c 'i=0; while true; do echo "$i: $(date)"; i=$((i+1)); sleep 1; done'
+kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh -c 'echo $(date); sleep 3600'
 
-kubectl run curl --image=radial/busyboxplus:curl -it --rm
+
+kubectl run curl --image=radial/busyboxplus -it --rm -- curl -m 5 my-service:8080 # useful to include the 5 second timeout
+kubectl run wget --image=busybox -it --rm -- wget --timeout=5 -O- my-service:8080 
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
 kubectl api-versions # https://akomljen.com/kubernetes-api-resources-which-group-and-version-to-use/
@@ -157,13 +169,18 @@ key: "Antidisestab\
 
 # To improve
 
+- https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
+- https://killer.sh/course/preview/052229bd-1062-44a4-8aae-f50d0770165a
+
 - What's the use of giving a Port name in a Pod definition?
   - Each named port in a pod must have a unique name. It can be referred to by services.
+  - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be ccessible from the network.
 
 - Rolling update strategy in the deployment
     - maxSurge (max of extra replicas that can be created with the new version) && maxUnavailable (max number of replicas that can be considered unavailable)
     - percentage (based on the replicas value) or a fixed number
 - Not sure if included but review a bit of:
+    - HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
     - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
     - Statefulset
     - Daemonset
@@ -181,6 +198,9 @@ Most of the links were taken from:
 - https://github.com/twajr/ckad-prep-notes#tasks-from-kubernetes-doc
 
 ## P1
+
+https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+- Must read, come here many times until you grasp every tip.
 
 https://kubernetes.io/docs/concepts/services-networking/network-policies/
 - Network policies do not conflict, they are additive. If any policy or policies select a pod, the pod is restricted to what is allowed by the union of those policies’ ingress/egress rules. Thus, order of evaluation does not affect the policy result.
@@ -466,6 +486,12 @@ https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/
 - Each Pod is assigned a unique IP address. Every container in a Pod shares the network namespace, including the IP address and network ports. Containers inside a Pod can communicate with one another using localhost. When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
 
 https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+- Pod phases:
+  - `Pending`: includes time before being scheduled as well as time spent downloading images over the network. 
+  - `Running`: Pod bound to a node, and containers were created. 
+  - `Succeeded`: All containers have have terminated in success, and will not be restarted.
+  - `Failed`: All containers have terminated, and at least one of them in failure.
+  - `Unknown`: state of the Pod could not be obtained, typically due to an error communicating with the host of the Pod.
 - The type field is a string with the following possible values:
   - `PodScheduled`: the Pod has been scheduled to a node;
   - `Ready`: the Pod is able to serve requests and should be added to the load balancing pools of all matching Services;
@@ -485,6 +511,10 @@ status:
       lastProbeTime: null
       lastTransitionTime: 2018-01-01T00:00:00Z
 ```
+
+https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+- The command and arguments that you define in the configuration file override the default command and arguments provided by the container image. If you define args, but do not define a command, the default command is used with your new arguments. If you supply a command but no args for a Container, only the supplied command is used.
+- The environment variable appears in parentheses, "$(VAR)". This is required for the variable to be expanded in the command or args field.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 - `Probe with command`
@@ -580,6 +610,7 @@ containers:
   - name: secret-volume
     readOnly: true # useful attribute
     mountPath: "/etc/secret-volume"
+    # username will be mounted as /etc/secret-volume/my-group/my-username 
 volumes:
 - name: foo
   secret:
@@ -589,30 +620,55 @@ volumes:
       path: my-group/my-username
       mode: 0777 # 511 in decimal in case you use json
 ```
-- Linux users should add the option -w 0 to base64 commands.
-- username secret is stored under /etc/foo/my-group/my-username file instead of /etc/foo/username. 
-- If .spec.volumes[].secret.items is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed in the items field. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
-- Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are base64 decoded.
-- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the ConfigMapAndSecretChangeDetectionStrategy field in the KubeletConfiguration struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the kubelet sync period + cache propagation delay, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
-- Secret resources reside in a namespace. Secrets can only be referenced by Pods in that same namespace.
-- How to use a `docker` secret type?
-    - You can attach it in a POD, using the field `imagePullSecrets` or better yet, attaching it the default service-account in the desired namespace:  https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account
+- Linux users should use the base64 command as `base64 -w 0`.
+- If `.spec.volumes[].secret.items` is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
+- Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are `base64 decoded`.
+- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the `ConfigMapAndSecretChangeDetectionStrategy` field in the `KubeletConfiguration` struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the `kubelet sync period + cache propagation delay`, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
+- Secret resources reside in a namespace. `Secrets can only be referenced by Pods in that same namespace`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 
+- When you create a pod, if you do not specify a service account, it is `automatically` assigned the `default` service account in the same namespace.
+- `automountServiceAccountToken: false` can be set both in the `ServiceAccount` as well as in the `Pod.spec` (this takes precedence).
+- How to use a `docker-registry` secret type?
+  - `kubectl create secret docker-registry docker-secret --docker-server --docker-username=user --docker-password`
+  - Then attach it with `imagePullSecrets` in a `Pod.spec` or or better yet in a `ServiceAccount` so that it is included as default in your pods.
+- `Service Account Token Volume Projection` example:
+```yaml
+kind: Pod
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    volumeMounts:
+    - mountPath: /var/run/secrets/tokens
+      name: vault-token
+  serviceAccountName: my-sa
+  volumes:
+  - name: vault-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          path: vault-token
+          expirationSeconds: 7200
+          audience: vault
+```
+
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-
-https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/
-
-https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-initialization/
-
-https://kubernetes.io/docs/concepts/workloads/controllers/deployment
-
-https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
-
-https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
-
-https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
+- Best way to learn about fields is to run: `kubectl explain` with `pod.spec.securityContext` and `pod.spec.containers.securityContext`.
+- Remember that `pod.spec.containers.securityContext` has precedence over `pod.spec.securityContext`.
+- Important ones in `pod.spec.securityContext`:
+  - `fsGroup`: A special supplemental group that applies to all containers in a pod. Some `volumes` allow the Kubelet to change the ownership of that volume to be owned by the pod: 1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw---- If unset, the Kubelet will not modify the ownership and permissions of any volume.
+  - `runAsGroup`: The GID to run the entrypoint of the container process. Uses runtime default if unset, usualy root (0).
+  - `runAsNonRoot`: Indicates that the container must run as a non-root user. If `true`, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
+  - `seLinuxOptions`: The SELinux context to be applied to all containers.
+  - `supplementalGroups`: A list of groups applied to the first process run in each container, in addition to the container's primary GID.
+- Important ones in `pod.spec.containres.securityContext`:
+  - `allowPrivilegeEscalation`: Controls whether a process can gain more privileges than its parent process. `True` always when the container is: 1) run as Privileged OR 2) has `CAP_SYS_ADMIN`.
+  - `capabilities`: The capabilities to add/drop when running containers, eg: `capabilities.add: ["NET_ADMIN", "SYS_TIME"]`.
+  - privileged: Processes in privileged containers are equivalent to root on the host. Defaults to false.
+  - `readOnlyRootFilesystem`: Whether this container has a read-only root filesystem. Default is false.
+  - `runAsGroup`, `runAsNonRoot`, `runAsUser`, `seLinuxOptions`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
 - The container process no longer has `PID 1`. Some container images refuse to start without PID 1 (eg: systemd). `kill -HUP 1` will signal the pod sandbox, `/pause` in the example below.
@@ -637,27 +693,82 @@ spec:
     tty: true
 ```
 
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-initialization/
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: workdir
+      mountPath: /usr/share/nginx/html
+  initContainers: # These containers are run to completion during pod initialization before others are run.
+  - name: install
+    image: busybox
+    command: [wget, "-O", "/work-dir/index.html", "http://kubernetes.io"]
+    volumeMounts:
+    - name: workdir
+      mountPath: "/work-dir"
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {}
+```
+
+https://kubernetes.io/docs/concepts/workloads/controllers/deployment
+
+https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
+
+https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
+
+https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application-introspection/
+- When you bind a pod to a `hostPort` there are a limited number of places that the pod can be scheduled. In most cases, hostPort is unnecessary; try using a `service` object to expose your pod. If you do require hostPort then you can only schedule as many pods as there are nodes in your container cluster.
+- To list all events you can use `kubectl get events` but you have to remember that events are `namespaced`. This means that if you’re interested in events for some namespaced object (e.g. what happened with Pods in namespace my-namespace) you need to explicitly provide a namespace to the command. To see events from all namespaces, you can use the `--all-namespaces` argument.
+- Rememeber to inspect `nodes` as the may become `NotReady`, and also notice that the pods are no longer running (they are evicted after five minutes of `NotReady` status).
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application/
+- Highly recommended to read everything from this link.
+- Run `kubectl apply --validate -f mypod.yaml`. It will error if for instance you misspelled `command as commnd`.
+- If you are missing `endpoints` for your `service`, try listing pods using the labels that Service uses:
+```yaml
+spec:
+  - selector:
+     name: nginx
+     type: frontend
+---
+# kubectl get pods --selector=name=nginx,type=frontend
+```
+- If the list of pods matches expectations, but your endpoints are still empty, it’s possible that you don’t have the right ports exposed. Verify that the `Pod’s containerPort` matches up with the `Service’s targetPort`.
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-pod-replication-controller/
+- Same tips than for debugging Pods.
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
+- Highly recommended to read everything from this link. 
+- Here are key points (most of them have to be run in a temp pod like a `busybox`)
 
-https://kubernetes.io/docs/tasks/debug-application-cluster/core-metrics-pipeline/
+1. Test connection directly from Pod IP
+1. Check the service work by DNS, `nslookup <service>` or `nslookup <service>.<namespace>` in case you are in a different namespace than the service or with FQDN `nslookup <service>.<namespace>.svc.cluster.local` (WARN: cluster.local could be different in your cluster).
+    1. If you can do a FQDN lookup but not a relative one, check the file `/etc/resolv.conf` which should have the `"nameserver: 10.0.0.10"`, `"search: default.svc.cluster.local, svc.cluster.local, cluster.local"` and `"options ndots:5"`.
+    1. `<nameserver>` is the cluster's DNS Service IP, find it with `kubectl get svc -A | grep kube-dns`.
+    1. You can test from a Node as well with `nslookup <FQDN> <nameserver_IP>`. Also, you can `curl <service>`.
+1. The `nslookup kubernetes.default` (k8s master service) should always work from within a Pod, if not there might be something with `kube-proxy`.
+1. If DNS worked, you should know check if you can connect using the `Service IP`.
+1. Whatch out for Service definition:
+    1. If you meant to use a numeric port, is it a number 9376 or a string “9376” (named port)?
+    1. Is the port's protocol correct for your Pods?
+    1. Use service selectors to find the associated pods and check that the correct `endpoints` are created with same pods IP.
+1. If you get here, your Service is running, has Endpoints, and your Pods are actually serving. At this point, the whole `Service proxy mechanism is suspect`:
+    1. In your nodes: `ps auxw | grep kube-proxy` and check logs with `/var/log/kube-proxy.log` or using `journalctl`.
+    1. Ensure `conntrack` is installed.
+    1. If `kube-proxy` is in `iptables` mode, check them with `iptables-save | grep hostnames`, for each port of each Service, there should be 1 rule in `KUBE-SERVICES`.
 
-https://kubernetes.io/docs/tasks/debug-application-cluster/local-debugging/
-
-https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
-
-https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/
-
-https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-
-https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/
-
-https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/
 
 ## P2
 
@@ -673,6 +784,7 @@ https://kubernetes.io/docs/concepts/cluster-administration/logging/
 https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+- Labels can be attached to objects at creation time or later on. They can be modified at any time.
 - The name segment is required and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. The prefix is optional. If specified, the prefix must be a DNS subdomain: a series of DNS labels separated by dots (.), not longer than 253 characters in total, followed by a slash (/).
 - The kubernetes.io/ and k8s.io/ prefixes are reserved for Kubernetes core components.
 - Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
@@ -686,7 +798,17 @@ selector:
     - {key: environment, operator: NotIn, values: [dev]}
 ```
 
+https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/
+- `kubectl describe pod <pod>  | grep -i qos`
+- Types:
+  - `Guaranteed`: Containers in a Pod has `memory_request = memory_limit && cpu_request == cpu__limit`
+  - `Burstable`: At least one container in a Pod has a memory or cpu request without meeting Guaranteed QoS.
+  - `BestEffort`: Containers in a Pod must not have any memory or cpu limits or requests.
+
 https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/
+- `Sidecar`: TODO
+- `Ambassador`: TODO
+- `Adapter`: TODO
 
 ## P3
 
@@ -697,8 +819,6 @@ https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/
 
-https://kubernetes.io/docs/reference/kubectl/cheatsheet/
-
 https://kubernetes.io/docs/tasks/administer-cluster/declare-network-policy/
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
@@ -708,3 +828,13 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storag
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-projected-volume-storage/
 
 https://kubernetes.io/docs/tasks/access-application-cluster/communicate-containers-same-pod-shared-volume/
+
+https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/
+
+https://kubernetes.io/docs/tasks/debug-application-cluster/local-debugging/
+
+https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
+
+https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/
+
+https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/
