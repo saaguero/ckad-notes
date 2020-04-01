@@ -167,26 +167,6 @@ key: "Antidisestab\
 # HINT: Use >- or |- instead if you don't want a linebreak appended at the end.
 ```
 
-# To improve
-
-- https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
-- https://killer.sh/course/preview/052229bd-1062-44a4-8aae-f50d0770165a
-
-- What's the use of giving a Port name in a Pod definition?
-  - Each named port in a pod must have a unique name. It can be referred to by services.
-  - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be ccessible from the network.
-
-- Not sure if included but review a bit of:
-    - HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
-    - Statefulset
-    - Daemonset
-    - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
-    - RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
-    - Taints/Tolerations/Affinity
-    - Quotas
-    - PodDisruptionBudget
-    - PriorityClass
-
 # Docs to study
 
 Most of the links were taken from:
@@ -481,6 +461,9 @@ https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/
 
 https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/
 - Each Pod is assigned a unique IP address. Every container in a Pod shares the network namespace, including the IP address and network ports. Containers inside a Pod can communicate with one another using localhost. When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
+- What's the use of giving a port name in a Pod definition?
+  - Each named port in a pod must have a unique name. It can be referred to by services.
+  - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be ccessible from the network.
 
 https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
 - Pod phases:
@@ -733,9 +716,6 @@ https://kubernetes.io/docs/concepts/workloads/controllers/deployment
   - Only a `.spec.template.spec.restartPolicy = Always` is allowed, which is the default if not specified.
   - `.spec.progressDeadlineSeconds` seconds the Deployment controller waits before indicating (in the Deployment status) that the Deployment progress has stalled. In the future, once automatic rollback will be implemented, the Deployment controller will roll back a Deployment as soon as it observes such a condition.
 
-
-
-
 https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
 - Directly accessing the REST API:
   - Use `kubectl proxy --port=8080`, then do `curl http://localhost:8080/api`
@@ -835,8 +815,6 @@ https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/
 https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
 - Better to see the help, `kubectl port-forward --help`
 
-## P3
-
 https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 - Namespaces are a way to divide cluster resources between multiple users (via resource quota).
 - It is not necessary to use multiple namespaces just to separate slightly different resources, such as different versions of the same software: use labels to distinguish them.
@@ -865,3 +843,21 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monito
 https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/
 
 https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+
+# Docs that may be out-of-scope for CKAD
+
+- Not sure if included but review a bit of:
+    - Statefulset: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+    - Daemonset: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
+    - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
+    - PriorityClass: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+    - Affinity: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+    - Taints/Tolerations: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+    - Quotas: https://kubernetes.io/docs/concepts/policy/resource-quotas/
+    - PodDisruptionBudget: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+    - RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+
+# Nice readings
+
+- https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
+- https://killer.sh/course/preview/052229bd-1062-44a4-8aae-f50d0770165a
