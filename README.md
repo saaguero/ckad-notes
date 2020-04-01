@@ -176,9 +176,6 @@ key: "Antidisestab\
   - Each named port in a pod must have a unique name. It can be referred to by services.
   - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be ccessible from the network.
 
-- Rolling update strategy in the deployment
-    - maxSurge (max of extra replicas that can be created with the new version) && maxUnavailable (max number of replicas that can be considered unavailable)
-    - percentage (based on the replicas value) or a fixed number
 - Not sure if included but review a bit of:
     - HPA: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
     - Statefulset
@@ -720,6 +717,24 @@ spec:
 ```
 
 https://kubernetes.io/docs/concepts/workloads/controllers/deployment
+- To update a deployment: `kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1 --record` or just edit it `kubectl edit deployment <deploy>`.
+- Deployment ensures that only a certain number of Pods are down while they are being updated. By default, it ensures that at least 75% of the desired number of Pods are up (25% `deploy.spec.strategy.rollingUpdate.maxUnavailable`).
+- Deployment also ensures that only a certain number of Pods are created above the desired number of Pods. By default, it ensures that at most 125% of the desired number of Pods are up (25% `deploy.spec.strategy.rollingUpdate.maxSurge`).
+- `Multiple updates in-flight (Rollover)`: suppose you create a Deployment to create 5 replicas of `nginx:1.14.2`, but then update the Deployment to create 5 replicas of `nginx:1.16.1`, when only 3 replicas of `nginx:1.14.2` had been created. In that case, the Deployment immediately starts killing the 3 `nginx:1.14.2` Pods that it had created, and starts creating `nginx:1.16.1` Pods. **It does not wait for the 5 replicas of `nginx:1.14.2` to be created before changing course.**
+- A `Deployment's revision` is created when a Deployment's rollout is triggered. This means that the new revision is created if and only if the Deployment's Pod template `.spec.template` is changed, for example if you update the labels or container images of the template. Other updates, such as scaling the Deployment, do not create a Deployment revision, so that you can facilitate simultaneous manual- or auto-scaling. This means that when you roll back to an earlier revision, only the Deployment's Pod template part is rolled back.
+- Rolling back a deployment: `kubectl rollout history deployment.v1.apps/nginx-deployment [--revision=<#rev>]` and rollback with `kubectl rollout undo deployment.v1.apps/nginx-deployment [--to-revision=<#rev>]`
+- Scaling a deployment: `kubectl scale deployment.v1.apps/nginx-deployment --replicas=10`
+- Scaling with HPA (Horizontal-Pod-Autoscaling): `kubectl autoscale deployment <deploy> --min=10 --max=15 --cpu-percent=80`
+- You can pause a Deployment before triggering one or more updates and then resume it. This allows you to apply multiple fixes in between pausing and resuming without triggering unnecessary rollouts.
+  - `kubectl rollout pause|resume deployment <deploy>`
+  - You can set `.spec.revisionHistoryLimit` field in a Deployment to specify how many old ReplicaSets for this Deployment you want to retain. The rest will be garbage-collected in the background. By default, it is 10.
+  - If you want to roll out releases to a subset of users or servers using the Deployment, you can create multiple Deployments, one for each release, following the `canary pattern`.
+  - Rolling update strategy: `.spec.strategy.type` can be `RollingUpdate` (default) or `Recreate`.
+  - Only a `.spec.template.spec.restartPolicy = Always` is allowed, which is the default if not specified.
+  - `.spec.progressDeadlineSeconds` seconds the Deployment controller waits before indicating (in the Deployment status) that the Deployment progress has stalled. In the future, once automatic rollback will be implemented, the Deployment controller will roll back a Deployment as soon as it observes such a condition.
+
+
+
 
 https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
 - Directly accessing the REST API:
