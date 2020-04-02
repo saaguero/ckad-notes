@@ -846,16 +846,110 @@ https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-mul
 
 # Docs that may be out-of-scope for CKAD
 
-- Not sure if included but review a bit of:
-    - Statefulset: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
-    - Daemonset: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
-    - Ingress: https://kubernetes.io/docs/concepts/services-networking/ingress/
-    - PriorityClass: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
-    - Affinity: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-    - Taints/Tolerations: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-    - Quotas: https://kubernetes.io/docs/concepts/policy/resource-quotas/
-    - PodDisruptionBudget: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
-    - RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+- Like a `Deployment`, a `StatefulSet` manages Pods that are based on an identical container spec. Unlike a Deployment, a StatefulSet maintains a `sticky identity` for each of their Pods.
+- StatefulSet represents a set of pods with consistent identities, defined as: `Network`, a single stable DNS and hostname, `Storage`, as many `VolumeClaims` as requested. The StatefulSet guarantees that a given network identity will always map to the same storage identity.
+- Use cases / limitations:
+  - The storage for a given Pod must either be provisioned by a `PersistentVolume` based on the requested storage class, or pre-provisioned by an admin.
+  - Deleting and/or scaling a StatefulSet down will not delete the volumes associated with the StatefulSet.
+  - StatefulSets currently require a `headless service` to be responsible for the network identity of the Pods.
+  - To achieve `ordered and graceful` termination of the pods in the StatefulSet, scale the StatefulSet down to 0 prior to deletion.
+- Naming example of a ReplicaSet named `web` and headless service named `nginx`:
+  - Domain: nginx.default.svc.cluster.local
+  - Pod DNS: web-{0..N-1}.nginx.default.svc.cluster.local
+  - Pod Hostname: web-{0..N-1}
+- Deployment / Scaling:
+  - For a StatefulSet with N replicas, when Pods are being deployed, they are created sequentially, in order from {0..N-1}.
+  - When Pods are being deleted, they are terminated in reverse order, from {N-1..0}.
+  - Before a scaling operation is applied to a Pod, all of its predecessors must be Running and Ready. It will proceed in the same order as Pod termination (from the largest ordinal to the smallest).
+  - Before a Pod is terminated, all of its successors must be completely shutdown.
+  - `spec.podManagementPolicy` can be `OrderedReady` (default) or `Parallel` (does not wait for Pods to become Running and Ready)
+  - `spec.updateStrategy.type` can be `OnDelete` or `RollingUpdates` (default)
+- If you update the Pod template to a configuration that never becomes Running and Ready (for example, due to a bad binary or application-level configuration error), StatefulSet will stop the rollout and wait. After reverting the template, you must also delete any Pods that StatefulSet had already attempted to run with the bad configuration. StatefulSet will then begin to recreate the Pods using the reverted template.
+
+https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
+- A `DaemonSet` ensures that all (or some) `Nodes` run a copy of a `Pod`. As nodes are added to the cluster, Pods are added to them. As nodes are removed from the cluster, those Pods are garbage collected. Deleting a DaemonSet will clean up the Pods it created. Useful for running storage, log and monitoring daemons.
+- A Pod Template in a DaemonSet must have a `RestartPolicy: Always` (default)
+- If you specify a `.spec.template.spec.nodeSelector`, then the DaemonSet controller will create Pods on nodes which match that node selector.
+- If you specify a `.spec.template.spec.affinity`, then DaemonSet controller will create Pods on nodes which match that node affinity. - If you do not specify either, then the DaemonSet controller will create Pods on all nodes.
+- Communicating with Daemon Pods:
+  - Push: Pods in the DaemonSet are configured to send updates to another service, such as a stats database.
+  - NodeIP and Known Port: Pods in the DaemonSet can use a hostPort, so that the pods are reachable via the node IPs.
+  - DNS: Create a `headless service` with the same pod selector, and then discover DaemonSets using the endpoints resource.
+  - Service: Create a service with the same Pod selector, and use the service to reach a daemon on a random node (No way to reach specific node.)
+- Update strategies: `OnDelete` (new DaemonSet pods will only be created when you manually delete old DaemonSet pods.) and `RollingUpdate` (default)
+- If node labels are changed, the DaemonSet will promptly add Pods to newly matching nodes and delete Pods from newly not-matching nodes.
+- It is possible to create Pods by writing a file to a certain directory watched by Kubelet. These are called `static pods`. Unlike DaemonSet, static Pods cannot be managed with kubectl or other Kubernetes API clients. Static Pods do not depend on the apiserver, making them useful in cluster `bootstrapping` cases. Also, static Pods may be deprecated in the future.
+- Use a `Deployment` for stateless services, like frontends, where scaling up and down the number of replicas and rolling out updates are more important than controlling exactly which host the Pod runs on. Use a `DaemonSet` when it is important that a copy of a Pod always run on all or certain hosts, and when it needs to start before other Pods.
+
+https://kubernetes.io/docs/concepts/services-networking/ingress/
+- Ingress exposes HTTP and HTTPS routes from outside the cluster to `services` within the cluster. Traffic routing is controlled by rules defined on the Ingress resource. `Internet => Ingress => Services`
+- An Ingress may be configured to give Services externally-reachable URLs, load balance traffic, terminate SSL / TLS, and offer name based virtual hosting.
+- **An Ingress does not expose arbitrary ports or protocols**. Exposing services other than HTTP and HTTPS to the internet typically uses a service of type `Service.Type=NodePort` or `Service.Type=LoadBalancer`.
+- You must have an `ingress controller` (like ingress-nginx) to satisfy an Ingress. Only creating an Ingress resource has no effect.
+- Types of Ingress:
+
+```yaml
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress
+spec:
+  # Single Service Ingress (default backend with no rules)
+  backend:
+    serviceName: testsvc
+    servicePort: 80
+---
+  # Simple fanout (routes traffic from a single IP address to more than one Service)
+  # foo.bar.com -> 178.91.123.132 -> / foo    service1:4200
+  #                                 / bar    service2:8080
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - path: /foo
+        backend:
+          serviceName: service1
+          servicePort: 4200
+      - path: /bar
+        backend:
+          serviceName: service2
+          servicePort: 8080
+---
+  # Name based virtual hosting (routing traffic to multiple host names at the same IP address.)
+  # foo.bar.com --|                 |-> foo.bar.com service1:80
+  #               | 178.91.123.132  |
+  # bar.foo.com --|                 |-> bar.foo.com service2:80
+  spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - backend:
+          serviceName: service1
+          servicePort: 80
+  - host: bar.foo.com
+    http:
+      paths:
+      - backend:
+          serviceName: service2
+          servicePort: 80
+```
+- You can secure an `Ingress` by specifying a `Secret` that contains a TLS private key and certificate. Currently the Ingress only supports a single TLS port, `443`, and assumes TLS termination. If the TLS configuration section in an Ingress specifies different hosts, they are multiplexed on the same port according to the hostname specified through the SNI TLS extension (provided the Ingress controller supports SNI). 
+
+
+https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+
+https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+
+https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+
+
+
+- Quotas: https://kubernetes.io/docs/concepts/policy/resource-quotas/
+- PodDisruptionBudget: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+
+- RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
 
 # Nice readings
 
