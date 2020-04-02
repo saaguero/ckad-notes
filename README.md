@@ -962,14 +962,54 @@ spec:
 - When there are multiple nodes available for preemption, the scheduler tries to choose the node with a set of Pods with lowest priority. However, if such Pods have `PodDisruptionBudget` that would be violated if they are preempted then the scheduler may choose another node with higher priority Pods (`PodDisruptionBudget` is supported, **but not guaranteed**)
 
 https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+- Kubernetes offers features to help run `highly available` applications at the same time as frequent `voluntary` disruptions. We call this set of features `Disruption Budgets`.
+- Not all voluntary disruptions are constrained by Pod Disruption Budgets. For example, deleting deployments or pods bypasses `Pod Disruption Budgets`.
+- An Application Owner can create a PodDisruptionBudget object (PDB) for each application. A PDB limits the number of pods of a replicated application that are down simultaneously from voluntary disruptions. For example, a quorum-based application would like to ensure that the number of replicas running is never brought below the number needed for a quorum. A web front end might want to ensure that the number of replicas serving load never falls below a certain percentage of the total.
+- Cluster managers and hosting providers should use tools which respect Pod Disruption Budgets by calling the Eviction API instead of directly deleting pods or deployments. Examples are the `kubectl drain`.
+```yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: zk-pdb
+spec:
+  minAvailable: 2
+  selector: # similar selector than the one used in a Deployment
+    matchLabels:
+      app: zookeeper
+```
 
 https://kubernetes.io/docs/concepts/policy/resource-quotas/
+- A `ResourceQuota`, provides constraints that limit aggregate resource consumption per namespace. It can limit the quantity of objects that can be created in a namespace by type, as well as the total amount of compute resources that may be consumed by resources in that project.
+- `Resource quotas` divides up aggregate cluster resources, but it creates no restrictions around nodes: pods from several namespaces may run on the same node.
+- ResourceQuotas are independent of the cluster capacity. They are expressed in absolute units. So, if you add nodes to your cluster, this does not automatically give each namespace the ability to consume more resources.
+- A pod is in a `terminal state` if `.status.phase` in (Failed, Succeeded) is true.
+- Pods can be created at a specific priority. You can control a pod’s consumption of system resources based on a pod’s priority, by using the `scopeSelector` field in the quota spec.
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mem-cpu-demo
+spec:
+  # Every Container must have a memory request and cpu request.
+  hard:
+    # compute quota
+    requests.cpu: "1" # Across all pods in a non-terminal state, the sum of CPU requests cannot exceed this value.
+    requests.memory: 1Gi # Across all pods in a non-terminal state, the sum of memory requests cannot exceed this value.
+    # storage quota
+    requests.storage: 500Gi # Across all persistent volume claims, the sum of storage requests cannot exceed this value.
+    gold.storageclass.storage.k8s.io/requests.storage: 500Gi # Across all persistent volume claims associated with the storage-class-name, the sum of storage requests cannot exceed this value.
+    # Object count quota
+    configmaps: 50 # The total number of config maps that can exist in the namespace.
+    pods: 500
+    services: 100
+```
 
 https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 
 https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 
-https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+- Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
 
 # Nice readings
 
