@@ -887,6 +887,7 @@ https://kubernetes.io/docs/concepts/services-networking/ingress/
 - An Ingress may be configured to give Services externally-reachable URLs, load balance traffic, terminate SSL / TLS, and offer name based virtual hosting.
 - **An Ingress does not expose arbitrary ports or protocols**. Exposing services other than HTTP and HTTPS to the internet typically uses a service of type `Service.Type=NodePort` or `Service.Type=LoadBalancer`.
 - You must have an `ingress controller` (like ingress-nginx) to satisfy an Ingress. Only creating an Ingress resource has no effect.
+- You can secure an `Ingress` by specifying a `Secret` that contains a TLS private key and certificate. Currently the Ingress only supports a single TLS port, `443`, and assumes TLS termination. If the TLS configuration section in an Ingress specifies different hosts, they are multiplexed on the same port according to the hostname specified through the SNI TLS extension (provided the Ingress controller supports SNI).
 - Types of Ingress:
 
 ```yaml
@@ -935,21 +936,40 @@ spec:
           serviceName: service2
           servicePort: 80
 ```
-- You can secure an `Ingress` by specifying a `Secret` that contains a TLS private key and certificate. Currently the Ingress only supports a single TLS port, `443`, and assumes TLS termination. If the TLS configuration section in an Ingress specifies different hosts, they are multiplexed on the same port according to the hostname specified through the SNI TLS extension (provided the Ingress controller supports SNI). 
-
 
 https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+- Pods can have priority. Priority indicates the importance of a Pod relative to other Pods. If a Pod cannot be scheduled, the scheduler tries to preempt (evict) lower priority Pods to make scheduling of the pending Pod possible.
+```yaml
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000 # 32-bit integer, the higher the number, the higher the priority
+globalDefault: false # default value. If true, will be used as defaults for Pods (only one is allowed to be true)
+preemptionPolicy: PreemptLowerPriority # default value. If 'Never', will be scheduled ahead of other lower-priority pods, but cannot preempt other pods; subject to scheduler back-off.
+description: "This priority class should be used for XYZ service pods only."
+---
+# Usage
+kind: Pod
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  priorityClassName: high-priority
+```
+- A Node is considered for preemption only when the answer to this question is yes: "If all the Pods with lower priority than the pending Pod are removed from the Node, can the pending Pod be scheduled on the Node?"
+- Please note that `Pod P` is not necessarily scheduled to the `nominated Node`. After victim Pods are preempted, they get their `graceful termination period`. If another node becomes available while scheduler is waiting for the victim Pods to terminate, scheduler will use the other node to schedule `Pod P`. As a result `nominatedNodeName` and `nodeName` of Pod spec are not always the same. Also, if scheduler preempts Pods on `Node N`, but then a higher priority Pod than `Pod P` arrives, scheduler may give `Node N` to the new higher priority Pod. In such a case, scheduler clears nominatedNodeName of `Pod P`. By doing this, scheduler makes Pod P eligible to preempt Pods on another Node.
+- When there are multiple nodes available for preemption, the scheduler tries to choose the node with a set of Pods with lowest priority. However, if such Pods have `PodDisruptionBudget` that would be violated if they are preempted then the scheduler may choose another node with higher priority Pods (`PodDisruptionBudget` is supported, **but not guaranteed**)
+
+https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+
+https://kubernetes.io/docs/concepts/policy/resource-quotas/
 
 https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 
 https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 
-
-
-- Quotas: https://kubernetes.io/docs/concepts/policy/resource-quotas/
-- PodDisruptionBudget: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
-
-- RBAC: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
+https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/ && https://kubernetes.io/docs/reference/access-authn-authz/rbac/
 
 # Nice readings
 
