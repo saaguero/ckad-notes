@@ -11,7 +11,11 @@
 ## What can we do
 - Root privileges can be obtained by running `sudo -i`.
 - Rebooting of your server is permitted at any time.
-- `Ctrl+C` & and `Ctrl+V` are not supported in your exam terminal. For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
+- `Ctrl+C` & and `Ctrl+V` are not supported in your exam terminal.
+  - For Linux: select text for copy and `middle button` for paste (or both `left` and `right` simultaneously if you have no middle button.)
+  - For Mac: `⌘+C` to copy and `⌘+V` to paste.
+  - For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
+6.4. In addition, you might find it helpful to use the Notepad (see top menu under 'E
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
