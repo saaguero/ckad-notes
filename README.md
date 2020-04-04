@@ -1006,7 +1006,97 @@ spec:
 
 https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 
+- Pod `.spec.nodeName` is the simplest form of node selection constraint, but **due to its limitations it is typically not used**. If it is provided, it takes precedence over the other methods for node selection.
+- `Node affinity` is conceptually similar to `nodeSelector` – it allows you to constrain which nodes your pod is eligible to be scheduled on, based on labels on the node:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  nodeSelector: # Simplest form of node selection constraint
+    disktype: ssd # can be scheduled on nodes having this label
+  affinity:
+    # Node Affinity
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution: # required is a "hard" requirement
+        nodeSelectorTerms: # multiple nodeSelectorTerms are ANDed (all must be satisfied)
+        - matchExpressions: # multiple matchExpressions are ORed (one must be satisfied)
+          - key: kubernetes.io/e2e-az-name
+            operator: In # valid operators: In, NotIn, Exists, DoesNotExist, Gt, Lt. Use NotIn and DoesNotExist for node anti-affinity
+            values:
+            - e2e-az1
+            - e2e-az2
+      preferredDuringSchedulingIgnoredDuringExecution: # preferred is a "soft" requirement
+      - weight: 1 # valid values [1-100], the computed nodes with higher weights are preferred
+        preference:
+          matchExpressions:
+          - key: another-node-label-key
+            operator: In
+            values:
+            - another-node-label-value
+```
+
+- `Inter-pod affinity` and `anti-affinity` allow you to constrain which `nodes` your `pod` is eligible to be scheduled based on labels on pods that are already running on the node rather than based on labels on nodes. 
+- `Rules` are of the form "this pod should (or, in the case of anti-affinity, should not) run in an `X` if that `X` is already running one or more pods that meet rule `Y`". 
+- `Y` is expressed as a LabelSelector with an optional associated list of `namespaces`.
+- `X` is a topology domain like `node`, `rack`, `cloud provider region`. You express it using a `topologyKey` which is the key for the node label that the system uses to denote such a topology domain. Examples: `kubernetes.io/hostname`, `topology.kubernetes.io/zone`, `topology.kubernetes.io/region`, `node.kubernetes.io/instance-type`, `kubernetes.io/os`, `kubernetes.io/arch`.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server
+spec:
+  selector:
+    matchLabels:
+      app: web-store
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web-store
+    spec:
+      affinity:
+        podAntiAffinity:
+          # do not co-locate web-store pods in the same node
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In # Valid operators: In, NotIn, Exists, DoesNotExist
+                values:
+                - web-store
+            topologyKey: "kubernetes.io/hostname"
+        podAffinity:
+          # co-locate web-store pods with cache pods
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - cache
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: web-app
+        image: nginx:1.16-alpine
+
+# Will result in the following scheduling:
+# node1: web1 && cache1
+# node2: web2 && cache2
+# node3: web3 && cache3
+```
+
 https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+
 
 https://kubernetes.io/docs/reference/access-authn-authz/rbac/
 - Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
