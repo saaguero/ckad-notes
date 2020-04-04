@@ -781,8 +781,8 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
 ## P2
 
 https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/
-- If the pod does not have a ServiceAccount set, it sets the ServiceAccount to `default`.
-- It adds a volumeSource to each container of the pod mounted at `/var/run/secrets/kubernetes.io/serviceaccount`.
+- If the pod does not have a `ServiceAccount` set, it sets it to `default`.
+- It adds a `volumeSource` to each container of the pod mounted at `/var/run/secrets/kubernetes.io/serviceaccount`.
 
 https://kubernetes.io/docs/concepts/cluster-administration/logging/
 - Using a node-level logging agent is the most common and encouraged approach for a Kubernetes cluster, because it creates only one agent per node, and it doesn’t require any changes to the applications running on the node. However, node-level logging only works for applications' standard output and standard error.
@@ -1100,7 +1100,51 @@ spec:
 ```
 
 https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+- `Node affinity`, is a property of pods that `attracts` them to a set of nodes; `Taints` are the opposite - they allow a node to `repel` a set of pods.
+- `Taints` are applied to a `node`; this marks that the node should not accept any pods that do not tolerate the taints. `Tolerations` are applied to `pods`, and allow (but do not require) the pods to schedule onto nodes with matching taints.
 
+```bash
+# Add a taint
+kubectl taint nodes node1 key=value:NoSchedule
+# Remove a taint
+kubectl taint nodes node1 key:NoSchedule-
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  tolerations:
+  - key: "example-key"
+    operator: "Exists"
+    effect: "NoSchedule"
+    # value: only necessary if using the operator "Equal"
+---
+  # Tolerates everything (matches all keys, values and effects)
+  tolerations:
+  - operator: "Exists"
+---
+  # Matches all effects with key `mykey`.
+  tolerations:
+  - key: "mykey"
+    operator: "Exists"
+```
+
+- You can put multiple taints on the same node and multiple tolerations on the same pod. The way Kubernetes processes multiple taints and tolerations is like a `filter`: start with all of a node's taints, then ignore the ones for which the pod has a matching toleration; the remaining `un-ignored` taints have the indicated effects on the pod. In particular:
+  - if there is at least `one un-ignored` taint with effect `NoSchedule` then Kubernetes `will not schedule` the pod onto that node.
+  - if there is `no un-ignored` taint with effect `NoSchedule` but there is at least `one un-ignored` taint with effect `PreferNoSchedule` then Kubernetes will `try to not schedule` the pod onto the node.
+  - if there is at least `one un-ignored` taint with effect `NoExecute` then the pod `will be evicted` from the node (if it is already running on the node), and `will not be scheduled` onto the node (if it is not yet running on the node).
+- Normally, if a taint with effect NoExecute is added to a node, then any pods that do not tolerate the taint will be evicted immediately, and pods that do tolerate the taint `will never be evicted`. However, a toleration with `NoExecute` effect can specify an optional `tolerationSeconds` field that dictates how long the pod will stay bound to the node after the taint is added.
+- Kubernetes `automatically` adds a toleration for `node.kubernetes.io/not-ready` with `tolerationSeconds=300` and `node.kubernetes.io/unreachable` with `tolerationSeconds=300`.
+-  `DaemonSet` are created with these tolerations plus other tolerations like `node.kubernetes.io/memory-pressure`, `node.kubernetes.io/disk-pressure`, `node.kubernetes.io/network-unavailable (host network only)` **without `tolerationSeconds` so they are never evicted**.
 
 https://kubernetes.io/docs/reference/access-authn-authz/rbac/
 - Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
