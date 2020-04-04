@@ -741,7 +741,7 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application-int
 - Rememeber to inspect `nodes` as the may become `NotReady`, and also notice that the pods are no longer running (they are evicted after five minutes of `NotReady` status).
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application/
-- Highly recommended to read everything from this link.
+- **Highly recommended to read everything from this link.**
 - Run `kubectl apply --validate -f mypod.yaml`. It will error if for instance you misspelled `command as commnd`.
 - If you are missing `endpoints` for your `service`, try listing pods using the labels that Service uses:
 ```yaml
@@ -758,7 +758,7 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/debug-pod-replication
 - Same tips than for debugging Pods.
 
 https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
-- Highly recommended to read everything from this link. 
+- **Highly recommended to read everything from this link.**
 - Here are key points (most of them have to be run in a temp pod like a `busybox`)
 
 1. Test connection directly from Pod IP
@@ -1147,7 +1147,43 @@ spec:
 -  `DaemonSet` are created with these tolerations plus other tolerations like `node.kubernetes.io/memory-pressure`, `node.kubernetes.io/disk-pressure`, `node.kubernetes.io/network-unavailable (host network only)` **without `tolerationSeconds` so they are never evicted**.
 
 https://kubernetes.io/docs/reference/access-authn-authz/rbac/
-- Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/
+- **Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/**
+- K8s provides no API objects for users (something like we have for Pods, Deployments)
+- User management must be configured by the cluster administrator:
+  - Certificate-based auth, Token-based auth, Basic auth, OAuth2
+- K8s is configured with a `CA`, so every cert signed with this CA will be accepted by the k8s API. You can use `OpenSSL` or `CloudFlare's PKI toolkit` to create these certs.
+  - `/etc/kubernetes/pki/[ca.crt,ca.key]`
+  - Important fields in the SSL cert: `Common Name (CN)`: k8s uses it as the `user` && `Organization (O)`: k8s uses it as the `group`.
+- RBAC in Kubernetes
+  - Three groups: Subjects, API Resources, Operations (verbs)
+  - Roles: `Operations => API Resources`.
+  - RoleBindings: `Role => Subects`.
+  - ClusterRoles && ClusterRoleBindings are very similar but without namespaces (apply to the whole cluster)
+    - K8s comes with predefined ClusterRoleBindings, you can use themp (eg: add the group in the Orgnatization field of your certificate)
+```yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  namespace: myns
+  name: admin
+rules:
+  - apiGroups: [] # empty if using resources from core, can be "*"
+    resources: ["pods"] # can be "*"
+    verbs: ["get", "list"] # can be "*"
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+  namespace: myns
+  name: test
+subjects:
+  - kind: Group # can be "user", "ServiceAccount"
+    name: devs
+    apiGroup: rbac.authorization.k8s.io
+roleRef: # Only one role per binding!
+  kind: Role
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+```
 
 # Nice readings
 
