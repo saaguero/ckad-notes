@@ -812,9 +812,9 @@ https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/
   - `BestEffort`: Containers in a Pod must not have any memory or cpu limits or requests.
 
 https://kubernetes.io/blog/2015/06/the-distributed-system-toolkit-patterns/
-- `Sidecar`: TODO
-- `Ambassador`: TODO
-- `Adapter`: TODO
+- `Sidecar`: Extend and enhance the main container. Example: A Pod with a WebServer container and a Sync container which syncs files from a git repository. File system is shared between the two containers.
+- `Ambassador`: Proxy local connections to the world. Example: A Pod with your App container and a Redis Proxy container, which is responsible for splitting reads/writes to appropriate servers. Main container discovers the Redis Proxy container in localhost since they are in the same Pod.
+- `Adapter`: Standardize and normalize output. Example: Pods have their App container and a Adapter container to unified logs to be consumed by a Centralized monitoring system.
 
 https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/
 - Better to see the help, `kubectl port-forward --help`
