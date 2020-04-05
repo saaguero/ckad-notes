@@ -84,6 +84,7 @@ set shiftwidth=2 softtabstop=2 tabstop=2
 set tabstop=2
 set expandtab
 set list
+retab # in case you have mixed <tabs> and <spaces>
 
 # ubuntu
 apt update
@@ -124,9 +125,8 @@ kubectl get apiservices | grep metrics
 # run including a command!
 kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh -c 'echo $(date); sleep 3600'
 
-
-kubectl run curl --image=radial/busyboxplus -it --rm -- curl -m 5 my-service:8080 # useful to include the 5 second timeout
-kubectl run wget --image=busybox -it --rm -- wget --timeout=5 -O- my-service:8080 
+kubectl run curl --image=radial/busyboxplus -it --rm --restart=Never - curl -m 5 my-service:8080 # useful to include the 5 second timeout
+kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O- my-service:8080 
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
 kubectl api-versions # https://akomljen.com/kubernetes-api-resources-which-group-and-version-to-use/
