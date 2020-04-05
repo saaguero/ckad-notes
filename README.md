@@ -15,7 +15,6 @@
   - For Linux: select text for copy and `middle button` for paste (or both `left` and `right` simultaneously if you have no middle button.)
   - For Mac: `⌘+C` to copy and `⌘+V` to paste.
   - For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
-6.4. In addition, you might find it helpful to use the Notepad (see top menu under 'E
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
@@ -183,13 +182,13 @@ https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 - Must read, come here many times until you grasp every tip.
 
 https://kubernetes.io/docs/concepts/services-networking/network-policies/
-- Network policies do not conflict, they are additive. If any policy or policies select a pod, the pod is restricted to what is allowed by the union of those policies’ ingress/egress rules. Thus, order of evaluation does not affect the policy result.
-- podSelector: Each NetworkPolicy includes a podSelector which selects the grouping of pods to which the policy applies. The example policy selects pods with the label “role=db”. An empty podSelector selects all pods in the namespace.
-- policyTypes: Each NetworkPolicy includes a policyTypes list which may include either Ingress, Egress, or both. The policyTypes field indicates whether or not the given policy applies to ingress traffic to selected pod, egress traffic from selected pods, or both. If no policyTypes are specified on a NetworkPolicy then by default Ingress will always be set and Egress will be set if the NetworkPolicy has any egress rules.
-- namespaceSelector and podSelector, be careful to use correct YAML syntax:
+- Network policies do not conflict, they are `additive`. If any policy or policies select a pod, the pod is restricted to what is allowed by the union of those policies’ ingress/egress rules. Thus, order of evaluation does not affect the policy result.
+- `podSelector`: Each NetworkPolicy includes a podSelector which selects the grouping of pods to which the policy applies. The example policy selects pods with the label “role=db”. An empty podSelector selects all pods in the namespace.
+- `policyTypes`: Each NetworkPolicy includes a policyTypes list which may include either Ingress, Egress, or both. The policyTypes field indicates whether or not the given policy applies to ingress traffic to selected pod, egress traffic from selected pods, or both. If no policyTypes are specified on a NetworkPolicy then by default Ingress will always be set and Egress will be set if the NetworkPolicy has any egress rules.
+- `namespaceSelector` and `podSelector`, be careful to use correct YAML syntax:
 
 ```yaml
-# contains a single from element allowing connections from Pods with the label role=client in namespaces with the label user=alice. But this policy:
+# contains a single from element allowing connections from Pods with the label role=client IN namespaces with the label user=alice.
   ingress:
   - from:
     - namespaceSelector:
@@ -199,7 +198,7 @@ https://kubernetes.io/docs/concepts/services-networking/network-policies/
         matchLabels:
           role: client
 ---
-# contains two elements in the from array, and allows connections from Pods in the local Namespace with the label role=client, or from any Pod in any namespace with the label user=alice.
+# contains two elements in the from array, and allows connections from Pods in the local Namespace with the label role=client OR from any Pod in any namespace with the label user=alice.
   ingress:
   - from:
     - namespaceSelector:
@@ -225,7 +224,7 @@ spec:
 ---
 
 # Default allow all ingress traffic (in a namespace)
-# This works even if policies are added that cause some pods to be treated as “isolated”
+# This works even if policies are added that cause some pods to be treated as "isolated"
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -240,23 +239,27 @@ spec:
 # Same cases for egress traffic (or both!)
 ```
 
+https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/
+
 https://kubernetes.io/docs/concepts/services-networking/service/
 - Port definitions in `Pods` have names, and you can reference these names in the `targetPort` attribute of a Service. You can change the port numbers that Pods expose in the next version of your backend software, without breaking clients.
-- If kube-proxy is running in iptables mode and the first Pod that’s selected does not respond, the connection fails. This is different from userspace mode: in that scenario, kube-proxy would detect that the connection to the first Pod had failed and would automatically retry with a different backend Pod.
+- If `kube-proxy` is running in `iptables mode` and the first Pod that’s selected does not respond, the connection fails. This is different from `userspace mode`: in that scenario, kube-proxy would detect that the connection to the first Pod had failed and would automatically retry with a different backend Pod.
 - You can use Pod readiness probes to verify that backend Pods are working OK, so that kube-proxy in iptables mode only sees backends that test out as healthy. Doing this means you avoid having traffic sent via kube-proxy to a Pod that’s known to have failed.
-- If you want to make sure that connections from a particular client are passed to the same Pod each time, you can select the session affinity based on the client’s IP addresses by setting service.spec.sessionAffinity to “ClientIP” (the default is “None”). You can also set the maximum session sticky time by setting service.spec.sessionAffinityConfig.clientIP.timeoutSeconds appropriately. (the default value is 10800, which works out to be 3 hours).
-- For some Services, you need to expose more than one port. Kubernetes lets you configure multiple port definitions on a Service object. When using multiple ports for a Service, you must give all of your ports names so that these are unambiguous.
-- You can specify your own cluster IP address as part of a Service creation request. To do this, set the .spec.clusterIP field. For example, if you already have an existing DNS entry that you wish to reuse, or legacy systems that are configured for a specific IP address and difficult to re-configure.
-- When you have a Pod that needs to access a Service, and you are using the environment variable method to publish the port and cluster IP to the client Pods, you must create the Service before the client Pods come into existence. Otherwise, those client Pods won’t have their environment variables populated.
-- A cluster-aware DNS server, such as CoreDNS, watches the Kubernetes API for new Services and creates a set of DNS records for each one. If DNS has been enabled throughout your cluster then all Pods should automatically be able to resolve Services by their DNS name.
-- Kubernetes also supports DNS SRV (Service) records for named ports. If the `my-service.my-ns` Service has a port named `http` with the protocol set to `TCP`, you can do a `DNS SRV` query for `_http._tcp.my-service.my-ns` to discover the port number for http, as well as the IP address.
-- Sometimes you don’t need load-balancing and a single Service IP. In this case, you can create what are termed “headless” Services, by explicitly specifying "None" for the cluster IP (.spec.clusterIP).
-    - For headless Services that define selectors, the endpoints controller creates Endpoints records in the API, and modifies the DNS configuration to return records (addresses) that point directly to the Pods backing the Service.
-    - For headless Services that do not define selectors, the endpoints controller does not create Endpoints records. However, the DNS system looks for and configures either: CNAME records for ExternalName-type Services || A records for any Endpoints that share a name with the Service, for all other types.
-- ExternalName: Maps the Service to the contents of the externalName field (e.g. foo.bar.example.com), by returning a CNAME record with its value. No proxying of any kind is set up.
-- In the Service spec, externalIPs can be specified along with any of the ServiceTypes. In the example below, “my-service” can be accessed by clients on “80.11.12.10:80” (externalIP:port)
-- Service without selectors, usueful to point to external places or service in a different namespace/cluster. Remember the corresponding Endpoint object is not created automatically.
-- The set of pods that a `service` targets is defined with a label selector, and only equality-based requirement selectors are supported (no set-based support)
+- If you want to make sure that connections from a particular client are passed to the same Pod each time, you can select the session affinity based on the client’s IP addresses by setting `service.spec.sessionAffinity` to `ClientIP` (default is None). You can also set the maximum session sticky time by setting `service.spec.sessionAffinityConfig.clientIP.timeoutSeconds` (the default value is 10800, which works out to be 3 hours).
+- For some Services, you need to expose more than one port. Kubernetes lets you configure multiple port definitions on a Service object. **When using multiple ports for a Service, you must give all of your ports names so that these are unambiguous**.
+- You can specify your own cluster IP address as part of a Service creation request. To do this, set the `.spec.clusterIP` field. For example, if you already have an existing DNS entry that you wish to reuse, or legacy systems that are configured for a specific IP address and difficult to re-configure.
+- When you have a Pod that needs to access a Service, and you are using the `environment variable` method to publish the port and cluster IP to the client Pods, you must create the Service before the client Pods come into existence.
+  - If the service's environment variables are not desired (because possible clashing with expected program ones, too many variables to process, only using DNS, etc) you can disable this mode by setting the `enableServiceLinks` flag to false on the pod spec.
+- A cluster-aware DNS server, such as `CoreDNS`, watches the Kubernetes API for new Services and creates a set of DNS records for each one. If DNS has been enabled throughout your cluster then all Pods should automatically be able to resolve Services by their DNS name.
+- Kubernetes also supports `DNS SRV` (Service) records for `named ports`. If the `my-service.my-ns` Service has a port named `http` with the protocol set to `TCP`, you can do a `DNS SRV` query for `_http._tcp.my-service.my-ns` to discover the port number for http, as well as the IP address.
+- Sometimes you don’t need load-balancing and a single Service IP. In this case, you can create what are termed `headless services`, by explicitly specifying `None` for the `.specclusterIP`.
+    - For `headless services` that define selectors, the endpoints controller creates `Endpoints` records in the API, and modifies the DNS configuration to return records (addresses) that point directly to the Pods backing the Service.
+    - For `headless services` that do not define selectors, the endpoints controller does not create `Endpoints` records. However, the DNS system looks for and configures either: CNAME records for `ExternalName services` OR `A records` for any `Endpoints` that share a name with the Service.
+- `ExternalName`: Maps the Service to the contents of the `externalName` field (e.g. foo.bar.example.com), by returning a `CNAME record` with its value. **No proxying of any kind is set up**.
+- In the service spec, `externalIPs` can be specified along with any of the service types, then a `my-service` will be accessible by clients on `externalIP:port`.
+- Service without selectors are usueful to point to external places or service in a different namespace/cluster. Remember the corresponding Endpoint object is not created automatically.
+- The set of pods that a `service` targets is defined with a `labelSelector`, and **only equality-based** requirement selectors are supported (no set-based support.)
+- You can run multiple `nginx pods` on the `same node` all using the `same containerPort` and access them `from any other pod or node` in your cluster using IP. Like Docker, ports can still be published to the host node's interfaces, but the need for this is radically diminished because of the networking model.
 
 ```yaml
 apiVersion: v1
@@ -280,29 +283,25 @@ subsets:
       - port: 9376
 ```
 
-https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/
-- You should be able to ssh into any node in your cluster and curl both IPs. Note that the containers are not using port 80 on the node, nor are there any special NAT rules to route traffic to the pod. This means you can run multiple nginx pods on the same node all using the same containerPort and access them from any other pod or node in your cluster using IP. Like Docker, ports can still be published to the host node’s interfaces, but the need for this is radically diminished because of the networking model.
-- Note: If the service environment variables are not desired (because possible clashing with expected program ones, too many variables to process, only using DNS, etc) you can disable this mode by setting the `enableServiceLinks` flag to false on the pod spec.
-
 https://kubernetes.io/docs/concepts/storage/volumes/
-- A Kubernetes volume, on the other hand, has an explicit lifetime - the same as the Pod that encloses it. Consequently, a volume outlives any Containers that run within the Pod, and data is preserved across Container restarts. Of course, when a Pod ceases to exist, the volume will cease to exist, too.
+- A `volume` has an explicit `lifetime` - the same as the Pod that encloses it. Consequently, a volume outlives any containers that run within the Pod, and data is preserved across container restarts. Of course, when a Pod ceases to exist, the volume will cease to exist, too.
 - Volumes can not mount onto other volumes or have hard links to other volumes. Each Container in the Pod must independently specify where to mount each volume.
 - `configMap`
-    - A Container using a ConfigMap as a `subPath` volume mount will not receive ConfigMap updates`.
+    - A Container using a ConfigMap as a `subPath` volume mount will not receive ConfigMap updates.
 - `secret`
     - A Container using a Secret as a subPath volume mount will not receive Secret updates.
-    - Backed by tmpfs (a RAM-backed filesystem) so they are never written to non-volatile storage.
+    - Backed by `tmpfs` (a RAM-backed filesystem) so they are never written to non-volatile storage.
 - `emptyDir`
-    - By default, emptyDir volumes are stored on whatever medium is backing the node - that might be disk or SSD or network storage, depending on your environment. However, you can set the `emptyDir.medium` field to `Memory` to tell Kubernetes to mount a `tmpfs` (RAM-backed filesystem) for you instead. While tmpfs is very fast, be aware that unlike disks, tmpfs is cleared on node reboot and any files you write **will count against your Container’s memory limit**.
+    - By default, emptyDir volumes are stored on whatever medium is backing the node - that might be disk or SSD or network storage, depending on your environment. However, you can set the `emptyDir.medium` field to `memory` to tell Kubernetes to mount a `tmpfs` (RAM-backed filesystem) for you instead. While tmpfs is very fast, be aware that unlike disks, it is cleared on node reboot and any files you write **will count against your container’s memory limit**.
 - `gitRepo (deprecated)`
-    - As an alternative, mount an `emptyDir` into an `InitContainer` that clones the git repo, then mount the EmptyDir into the Pod’s container.
+    - As an alternative, mount an `emptyDir` into an `InitContainer` that clones the git repo, then mount the emptyDir into the Pod's container.
 - `hostPath`
     - Mounts a file or directory from the host node's filesystem into your Pod.
     - Use: running a Container that needs access to Docker internals; use a hostPath of `/var/lib/docker`, allowing a Pod to specify whether a given hostPath should exist prior to the Pod running, whether it should be created, and what it should exist.
     - `hostPah.type`: DirectoryOrCreate (created with 0755, same ownership with Kubelet), Directory, FileOrCreate, File, Socket, CharDevice, BlockDevice, '' (default, no check performed)
     - **WARN**: the files or directories created on the underlying hosts are only writable by `root`. You either need to run your process as root in a privileged Container or modify the file permissions on the host to be able to write to a hostPath volume.
 - `nfs`
-    - An nfs volume allows an existing NFS (Network File System) share to be mounted into your Pod. Unlike emptyDir, which is erased when a Pod is removed, the contents of an nfs volume are preserved and the volume is merely unmounted. This means that an NFS volume can be pre-populated with data, and that data can be “handed off” between Pods. NFS can be mounted by multiple writers imultaneously.
+    - An nfs volume allows an existing NFS (Network File System) share to be mounted into your Pod. Unlike emptyDir, which is erased when a Pod is removed, the contents of an nfs volume are preserved and the volume is merely unmounted. This means that an NFS volume can be pre-populated with data, and that data can be handed off between Pods. NFS can be mounted by multiple writers imultaneously.
 - `persistentVolumeClaim`
     - A persistentVolumeClaim volume is used to mount a PersistentVolume into a Pod. PersistentVolumes are a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without knowing the details of the particular cloud environment.
 - `local`
@@ -354,7 +353,7 @@ spec:
     env:
     - name: POD_NAME
       valueFrom:
-        fieldRef: # Cool trick!
+        fieldRef: # Cool trick to reference data from this k8s object
           apiVersion: v1
           fieldPath: metadata.name
     image: busybox
