@@ -243,20 +243,20 @@ https://kubernetes.io/docs/concepts/services-networking/connect-applications-ser
 https://kubernetes.io/docs/concepts/services-networking/service/
 - Port definitions in `Pods` have names, and you can reference these names in the `targetPort` attribute of a Service. You can change the port numbers that Pods expose in the next version of your backend software, without breaking clients.
 - If `kube-proxy` is running in `iptables mode` and the first Pod that’s selected does not respond, the connection fails. This is different from `userspace mode`: in that scenario, kube-proxy would detect that the connection to the first Pod had failed and would automatically retry with a different backend Pod.
-- You can use Pod readiness probes to verify that backend Pods are working OK, so that kube-proxy in iptables mode only sees backends that test out as healthy. Doing this means you avoid having traffic sent via kube-proxy to a Pod that’s known to have failed.
+- You can use Pod `readiness probes` to verify that backend Pods are working OK, so that kube-proxy in iptables mode only sees backends that test out as healthy. Doing this means you avoid having traffic sent via kube-proxy to a Pod that’s known to have failed.
 - If you want to make sure that connections from a particular client are passed to the same Pod each time, you can select the session affinity based on the client’s IP addresses by setting `service.spec.sessionAffinity` to `ClientIP` (default is None). You can also set the maximum session sticky time by setting `service.spec.sessionAffinityConfig.clientIP.timeoutSeconds` (the default value is 10800, which works out to be 3 hours).
 - For some Services, you need to expose more than one port. Kubernetes lets you configure multiple port definitions on a Service object. **When using multiple ports for a Service, you must give all of your ports names so that these are unambiguous**.
 - You can specify your own cluster IP address as part of a Service creation request. To do this, set the `.spec.clusterIP` field. For example, if you already have an existing DNS entry that you wish to reuse, or legacy systems that are configured for a specific IP address and difficult to re-configure.
 - When you have a Pod that needs to access a Service, and you are using the `environment variable` method to publish the port and cluster IP to the client Pods, you must create the Service before the client Pods come into existence.
-  - If the service's environment variables are not desired (because possible clashing with expected program ones, too many variables to process, only using DNS, etc) you can disable this mode by setting the `enableServiceLinks` flag to false on the pod spec.
+  - If the service's environment variables are not desired (because possible clashing with expected program ones, too many variables to process, only using DNS, etc) you can disable this mode by setting the `pod.spec.enableServiceLinks`.
 - A cluster-aware DNS server, such as `CoreDNS`, watches the Kubernetes API for new Services and creates a set of DNS records for each one. If DNS has been enabled throughout your cluster then all Pods should automatically be able to resolve Services by their DNS name.
 - Kubernetes also supports `DNS SRV` (Service) records for `named ports`. If the `my-service.my-ns` Service has a port named `http` with the protocol set to `TCP`, you can do a `DNS SRV` query for `_http._tcp.my-service.my-ns` to discover the port number for http, as well as the IP address.
-- Sometimes you don’t need load-balancing and a single Service IP. In this case, you can create what are termed `headless services`, by explicitly specifying `None` for the `.specclusterIP`.
+- Sometimes you don’t need load-balancing and a single Service IP. In this case, you can create what are termed `headless services`, by specifying `.spec.clusterIP = None`.
     - For `headless services` that define selectors, the endpoints controller creates `Endpoints` records in the API, and modifies the DNS configuration to return records (addresses) that point directly to the Pods backing the Service.
     - For `headless services` that do not define selectors, the endpoints controller does not create `Endpoints` records. However, the DNS system looks for and configures either: CNAME records for `ExternalName services` OR `A records` for any `Endpoints` that share a name with the Service.
 - `ExternalName`: Maps the Service to the contents of the `externalName` field (e.g. foo.bar.example.com), by returning a `CNAME record` with its value. **No proxying of any kind is set up**.
 - In the service spec, `externalIPs` can be specified along with any of the service types, then a `my-service` will be accessible by clients on `externalIP:port`.
-- Service without selectors are usueful to point to external places or service in a different namespace/cluster. Remember the corresponding Endpoint object is not created automatically.
+- Service without selectors are useful to point to external places or service in a different namespace/cluster. Remember the corresponding Endpoint object is not created automatically.
 - The set of pods that a `service` targets is defined with a `labelSelector`, and **only equality-based** requirement selectors are supported (no set-based support.)
 - You can run multiple `nginx pods` on the `same node` all using the `same containerPort` and access them `from any other pod or node` in your cluster using IP. Like Docker, ports can still be published to the host node's interfaces, but the need for this is radically diminished because of the networking model.
 
@@ -288,17 +288,17 @@ https://kubernetes.io/docs/concepts/storage/volumes/
 - `configMap`
     - A Container using a ConfigMap as a `subPath` volume mount will not receive ConfigMap updates.
 - `secret`
-    - A Container using a Secret as a subPath volume mount will not receive Secret updates.
+    - A Container using a Secret as a `subPath` volume mount will not receive Secret updates.
     - Backed by `tmpfs` (a RAM-backed filesystem) so they are never written to non-volatile storage.
 - `emptyDir`
-    - By default, emptyDir volumes are stored on whatever medium is backing the node - that might be disk or SSD or network storage, depending on your environment. However, you can set the `emptyDir.medium` field to `memory` to tell Kubernetes to mount a `tmpfs` (RAM-backed filesystem) for you instead. While tmpfs is very fast, be aware that unlike disks, it is cleared on node reboot and any files you write **will count against your container’s memory limit**.
+    - By default, emptyDir volumes are stored on whatever medium is backing the node - that might be disk or SSD or network storage, depending on your environment. However, you can set the `emptyDir.medium` field to `memory` to tell Kubernetes to mount a `tmpfs` (RAM-backed filesystem) for you instead. While tmpfs is very fast, be aware that unlike disks, it is cleared on node reboot and any files you write will count against your container’s memory limit.
 - `gitRepo (deprecated)`
     - As an alternative, mount an `emptyDir` into an `InitContainer` that clones the git repo, then mount the emptyDir into the Pod's container.
 - `hostPath`
     - Mounts a file or directory from the host node's filesystem into your Pod.
     - Use: running a Container that needs access to Docker internals; use a hostPath of `/var/lib/docker`, allowing a Pod to specify whether a given hostPath should exist prior to the Pod running, whether it should be created, and what it should exist.
-    - `hostPah.type`: DirectoryOrCreate (created with 0755, same ownership with Kubelet), Directory, FileOrCreate, File, Socket, CharDevice, BlockDevice, '' (default, no check performed)
-    - **WARN**: the files or directories created on the underlying hosts are only writable by `root`. You either need to run your process as root in a privileged Container or modify the file permissions on the host to be able to write to a hostPath volume.
+    - `hostPah.type`: DirectoryOrCreate (created with 0755, same ownership with Kubelet), Directory, FileOrCreate, File, Socket, CharDevice, BlockDevice (default is empty, so no check is performed.)
+    - **WARN**: the files or directories created on the underlying hosts are only writable by `root`. You either need to run your process as root in a privileged Container or modify the file permissions on the host to be able to write to the volume.
 - `nfs`
     - An nfs volume allows an existing NFS (Network File System) share to be mounted into your Pod. Unlike emptyDir, which is erased when a Pod is removed, the contents of an nfs volume are preserved and the volume is merely unmounted. This means that an NFS volume can be pre-populated with data, and that data can be handed off between Pods. NFS can be mounted by multiple writers imultaneously.
 - `persistentVolumeClaim`
@@ -369,10 +369,10 @@ spec:
 ```
 
 https://kubernetes.io/docs/concepts/storage/persistent-volumes/
-- Once bound, PersistentVolumeClaim binds are exclusive, regardless of how they were bound. A PVC to PV binding is a one-to-one mapping, using a ClaimRef which is a bi-directional binding between the PersistentVolume and the PersistentVolumeClaim.
+- Once bound, `PersistentVolumeClaim binds are exclusive`, regardless of how they were bound. A `PVC` to `PV` binding is a `one-to-one mapping`, using a `ClaimRef` which is a bi-directional binding between the PersistentVolume and the PersistentVolumeClaim.
 - Claims will remain unbound indefinitely if a matching volume does not exist. Claims will be bound as matching volumes become available. For example, a cluster provisioned with many 50Gi PVs would not match a PVC requesting 100Gi. The PVC can be bound when a 100Gi PV is added to the cluster.
 - If a user deletes a PVC in active use by a Pod, the PVC is not removed immediately. PVC removal is postponed until the PVC is no longer actively used by any Pods. Also, if an admin deletes a PV that is bound to a PVC, the PV is not removed immediately. PV removal is postponed until the PV is no longer bound to a PVC.
-- When a user is done with their volume, they can delete the PVC objects from the API that allows reclamation of the resource. The reclaim policy for a PersistentVolume tells the cluster what to do with the volume after it has been released of its claim. Currently, volumes can either be:
+- When a user is done with their volume, they can delete the PVC objects from the API that allows reclamation of the resource. The `reclaim policy` for a `PersistentVolume` tells the cluster what to do with the volume after it has been released of its claim. Currently, volumes can either be:
     - `Retained`: allows for manual reclamation of the resource. You need to delete the PV, cleanup the data, create a new PV (or delete the associated storage asset like AWS EBS)
     - `Deleted`: removes both the PV from Kubernetes, as well as the associated storage asset in the external infrastructure, like AWS EBS.
     - `Recycled`: Deprecated, use dynamic provisioning instead. (Basic scrub: rm -rf /thevolume/*). only `NFS` and `HostPath` support recycling.
@@ -381,13 +381,13 @@ https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 - A volume with `volumeMode: Filesystem` is mounted into Pods into a directory. If the volume is backed by a block device and the device is empty, Kuberneretes creates a filesystem on the device before mounting it for the first time. You can set the value of `volumeMode: Block` to use a volume as a raw block device. Such volume is presented into a Pod as a block device, without any filesystem on it. This mode is useful to provide a Pod the fastest possible way to access a volume, without any filesystem layer between the Pod and the volume.
 - `Access modes`: ReadWriteOnce (RWO), ReadOnlyMany (ROX), ReadWriteMany (RWX)
 - A volume can only be mounted using one access mode at a time, even if it supports many. For example, a GCEPersistentDisk can be mounted as ReadWriteOnce by a single node or ReadOnlyMany by many nodes, but not at the same time.
-- A PV can have a `storageClassName` attribute to the name of a StorageClass. A PV of a particular class can only be bound to PVCs requesting that class. A PV with no storageClassName has no class and can only be bound to PVCs that request no particular class
+- A PV can have a `storageClassName` attribute to the name of a StorageClass. A PV of a particular class can only be bound to PVCs requesting that class. A PV with no storageClassName has no class and can only be bound to PVCs that request no particular class.
 - A PV can specify `node affinity` to define constraints that limit what nodes this volume can be accessed from. Pods that use a PV will only be scheduled to nodes that are selected by the node affinity.
 - `Phases of a Volumes`: Available, Bound, Released, Failed
-- PVC can have a `selector` to filter the set of volumes. YOu can use `matchLabels` as well as `matchExpressions`.
+- PVC can have a `selector` to filter the set of volumes. You can use `matchLabels` as well as `matchExpressions`.
 - PVC without attribute `storageClassName` will default to the configured value in the admission plugin, or "" if there is no one.
 - Claims (in a Pod) must exist in the same namespace as the Pod using the PVC.
-- PV binds are exclusive, and since PVC are namespaced objects, mounting claims with "Many" modes (ROX, RWX) is only possible within one namespace.
+- Since PV binds are exclusive, and since `PVC are namespaced` objects, mounting claims with "Many" modes `ROX, RWX` is only possible within one namespace.
 - Volume Snapshot / Restore and Cloning available to some CSI volume plugins.
 - Writing Portable Configuration:
     - Do not include PersistentVolume objects in the config, since the user instantiating the config may not have permission to create PersistentVolumes.
@@ -400,7 +400,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: slow
-provisioner: kubernetes.io/gce-pd
+provisioner: kubernetes.io/gce-pd # A Google Cloud storage device
 parameters:
   type: pd-standard
 ---
@@ -411,7 +411,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: slow
+  storageClassName: slow # matches the name of the above StorageClass
   resources:
     requests:
       storage: 30Gi
@@ -459,19 +459,19 @@ https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/
   - `Forbid`: if it is time for a new job run and the previous job run hasn’t finished yet, the cron job skips the new job run.
   - `Replace`: if it is time for a new job run and the previous job run hasn’t finished yet, the cron job replaces the currently running job run with a new job run
 - The `suspend` field is optional. If it is set to `true`, all subsequent executions are suspended. This setting does not apply to already started executions. Defaults to `false`.
-- The `successfulJobsHistoryLimit` (default 3) and `failedJobsHistoryLimit` (default 1)fields are optional. Setting to 0 keeps nothing.
+- The `successfulJobsHistoryLimit` (default 3) and `failedJobsHistoryLimit` (default 1) fields are optional. Setting to 0 keeps nothing.
 
 https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/
-- Each Pod is assigned a unique IP address. Every container in a Pod shares the network namespace, including the IP address and network ports. Containers inside a Pod can communicate with one another using localhost. When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
+- Each Pod is assigned a `unique IP address`. Every `container` in a Pod shares the `network namespace`, including the `IP address` and `network ports`. Containers inside a Pod can communicate with one another using localhost. When containers in a Pod communicate with entities outside the Pod, they must coordinate how they use the shared network resources (such as ports).
 - What's the use of giving a port name in a Pod definition?
   - Each named port in a pod must have a unique name. It can be referred to by services.
-  - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be ccessible from the network.
+  - `pod.spec.containers.ports`: List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is `primarily informational`. Not specifying a port here `DOES NOT prevent that port from being exposed`. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network.
 
 https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
 - Pod phases:
   - `Pending`: includes time before being scheduled as well as time spent downloading images over the network. 
   - `Running`: Pod bound to a node, and containers were created. 
-  - `Succeeded`: All containers have have terminated in success, and will not be restarted.
+  - `Succeeded`: All containers have terminated in success, and will not be restarted.
   - `Failed`: All containers have terminated, and at least one of them in failure.
   - `Unknown`: state of the Pod could not be obtained, typically due to an error communicating with the host of the Pod.
 - The type field is a string with the following possible values:
@@ -479,7 +479,7 @@ https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
   - `Ready`: the Pod is able to serve requests and should be added to the load balancing pools of all matching Services;
   - `Initialized`: all init containers have started successfully;
   - `ContainersReady`: all containers in the Pod are ready.
-- A `PodSpec` has a `restartPolicy` field with possible values `Always`, `OnFailure`, and `Never`. The default value is Always. restartPolicy applies to all Containers in the Pod. restartPolicy only refers to restarts of the Containers by the kubelet on the same node. Exited Containers that are restarted by the kubelet are restarted with an `exponential back-off` delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution. 
+- A `PodSpec` has a `restartPolicy` field with possible values `Always`, `OnFailure`, and `Never` (default is Always). `restartPolicy` applies to all Containers in the Pod. restartPolicy only refers to restarts of the Containers by the kubelet on the same node. Exited Containers that are restarted by the kubelet are restarted with an `exponential back-off` delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution.
 - A pod, once bound to a node, will never be rebound to another node.
 - `Pod readiness gate`: Additional conditions to be evaluated for Pod readiness. If Kubernetes cannot find such a condition in the `status.conditions`, the status of the condition is default to `False`:
 ```yaml
@@ -495,8 +495,8 @@ status:
 ```
 
 https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
-- The command and arguments that you define in the configuration file override the default command and arguments provided by the container image. If you define args, but do not define a command, the default command is used with your new arguments. If you supply a command but no args for a Container, only the supplied command is used.
-- The environment variable appears in parentheses, `$(VAR)`. This is required for the variable to be expanded in the command or args field.
+- The `command` and `arguments` that you define in the configuration file override the default command and arguments provided by the container image. If you define args, but do not define a command, the default command is used with your new arguments. If you supply a command but no args for a Container, only the supplied command is used.
+- Environment variables needs to be in parentheses, `$(VAR)` to be expanded in the `command` or `args` fields.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 - `Probe with command`
@@ -516,11 +516,11 @@ https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/
 
 https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/
 - The memory resource is measured in bytes. You can express memory as a plain integer or a fixed-point integer with one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
-- If you do not specify a memory limit for a Container, the Container has no upper bound on the amount of memory it uses. The Container could use all of the memory available on the Node where it is running which in turn could invoke the `OOM Killer`. Further, in case of an OOM Kill, a container with no resource limits will have a greater chance of being killed; or the Container is running in a namespace that has a default memory limit, and the Container is automatically assigned the default limit. Cluster administrators can use a `LimitRange` to specify a default value for the memory limit.
+- If you do not specify a memory limit for a Container, the Container has no upper bound on the amount of memory it uses. The Container could use all of the memory available on the Node where it is running which in turn could invoke the `OOM Killer`. Further, in case of an OOM (out-of-memory) Kill, a container with no resource limits will have a greater chance of being killed; or the Container is running in a namespace that has a default memory limit, and the Container is automatically assigned the default limit. Cluster administrators can use a `LimitRange` to specify a default value for the memory limit.
 - Besides describing or seeing the status of a Pod, you can also run `kubectl describe nodes` and search for `OOMKilling`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
-- When you are creating a ConfigMap based on a file, the key in the <data-source> defaults to the filename, and the value defaults to the file content.
+- When you are creating a ConfigMap based on a file, the key in the `data-source` defaults to the filename, and the value defaults to the file content.
 - The total delay from the moment when the ConfigMap is updated to the moment when new keys are projected to the pod can be as long as kubelet sync period (1 minute by default) + ttl of ConfigMaps cache (1 minute by default) in kubelet. `You can trigger an immediate refresh by updating one of the pod’s annotations`.
 - If you use `envFrom` to define environment variables from ConfigMaps, keys that are considered invalid will be skipped. The pod will be allowed to start, but the invalid names will be recorded in the event log `InvalidVariableNames`.
 - Use the option `--from-env-file` to create a ConfigMap from an env-file:
@@ -602,18 +602,18 @@ volumes:
       path: my-group/my-username
       mode: 0777 # 511 in decimal in case you use json
 ```
-- Linux users should use the base64 command as `base64 -w 0`.
 - If `.spec.volumes[].secret.items` is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
 - Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are `base64 decoded`.
-- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the `ConfigMapAndSecretChangeDetectionStrategy` field in the `KubeletConfiguration` struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the `kubelet sync period + cache propagation delay`, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
+  - Linux users should use the base64 command as `base64 -w 0`.
 - Secret resources reside in a namespace. `Secrets can only be referenced by Pods in that same namespace`.
+- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the `ConfigMapAndSecretChangeDetectionStrategy` field in the `KubeletConfiguration` struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the `kubelet sync period + cache propagation delay`, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 
 - When you create a pod, if you do not specify a service account, it is `automatically` assigned the `default` service account in the same namespace.
 - `automountServiceAccountToken: false` can be set both in the `ServiceAccount` as well as in the `Pod.spec` (this takes precedence).
 - How to use a `docker-registry` secret type?
-  - `kubectl create secret docker-registry docker-secret --docker-server --docker-username=user --docker-password`
+  - `kubectl create secret docker-registry secret_name --docker-server --docker-username --docker-password`
   - Then attach it with `imagePullSecrets` in a `Pod.spec` or or better yet in a `ServiceAccount` so that it is included as default in your pods.
 - `Service Account Token Volume Projection` example:
 ```yaml
@@ -637,7 +637,7 @@ spec:
 ```
 
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-- Best way to learn about fields is to run: `kubectl explain` with `pod.spec.securityContext` and `pod.spec.containers.securityContext`.
+- Best way to learn about fields is to run: `kubectl explain pod.spec.securityContext` and `kubectl explain pod.spec.containers.securityContext`.
 - Remember that `pod.spec.containers.securityContext` has precedence over `pod.spec.securityContext`.
 - Important ones in `pod.spec.securityContext`:
   - `fsGroup`: A special supplemental group that applies to all containers in a pod. Some `volumes` allow the Kubelet to change the ownership of that volume to be owned by the pod: 1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw---- If unset, the Kubelet will not modify the ownership and permissions of any volume.
@@ -653,8 +653,8 @@ https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   - `runAsGroup`, `runAsNonRoot`, `runAsUser`, `seLinuxOptions`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
-- The container process no longer has `PID 1`. Some container images refuse to start without PID 1 (eg: systemd). `kill -HUP 1` will signal the pod sandbox, `/pause` in the example below.
 - Processes/Filesystems are visible to other containers in the pod. This includes all information visible in `/proc`, `/proc/$pid/root`, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.
+- The container process no longer has `PID 1`, therefore some images will refuse to start without PID 1 (eg: systemd).
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -670,7 +670,7 @@ spec:
     securityContext:
       capabilities:
         add:
-        - SYS_PTRACE # needed if you need to send signal (SIGHUP) to a process in other containers
+        - SYS_PTRACE # needed to send signal `kill -HUP 1` to the pod sandbox, `/pause` in this case.
     stdin: true
     tty: true
 ```
