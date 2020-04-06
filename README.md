@@ -26,7 +26,6 @@
 - Dont be afraid of using sudo -i for root operations to save time.
 - After sshing to a given node (ssh command will be given) don't forget to exit to return to main machine.
 - **WARN**: if the exercises says that you need to find the broken `service`, and only the affected k8s object, describe the `service` search for the selector and find the pod with that one, and that is the failing one even though there may be other kubernetes objects .
-- **WARN**: if it is asked to delete a resource, delete it **without** `--force`, as it may be requested later to delete it forcefully.
 - **WARN**: if a livenessProbe is requested through something like `Implement a liveness-probe which checks the container to be reachable on port 80` it should be implemented as a `tcpSocket` and not an `httpGet`.
 
 # Cheatsheet
