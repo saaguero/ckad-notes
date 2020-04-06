@@ -1141,8 +1141,8 @@ spec:
   - if there is `no un-ignored` taint with effect `NoSchedule` but there is at least `one un-ignored` taint with effect `PreferNoSchedule` then Kubernetes will `try to not schedule` the pod onto the node.
   - if there is at least `one un-ignored` taint with effect `NoExecute` then the pod `will be evicted` from the node (if it is already running on the node), and `will not be scheduled` onto the node (if it is not yet running on the node).
 - Normally, if a taint with effect NoExecute is added to a node, then any pods that do not tolerate the taint will be evicted immediately, and pods that do tolerate the taint `will never be evicted`. However, a toleration with `NoExecute` effect can specify an optional `tolerationSeconds` field that dictates how long the pod will stay bound to the node after the taint is added.
-- Kubernetes `automatically` adds a toleration for `node.kubernetes.io/not-ready` with `tolerationSeconds=300` and `node.kubernetes.io/unreachable` with `tolerationSeconds=300`.
--  `DaemonSet` are created with these tolerations plus other tolerations like `node.kubernetes.io/memory-pressure`, `node.kubernetes.io/disk-pressure`, `node.kubernetes.io/network-unavailable (host network only)` **without `tolerationSeconds` so they are never evicted**.
+- Kubernetes `automatically` adds a tolerations NoExecute for `node.kubernetes.io/not-ready` with `tolerationSeconds=300` and `node.kubernetes.io/unreachable` with `tolerationSeconds=300` when the Node transitions to these states.
+-  `DaemonSet` are created with these tolerations as well plus other tolerations like `node.kubernetes.io/memory-pressure`, `node.kubernetes.io/disk-pressure`, `node.kubernetes.io/network-unavailable (host network only)` **without `tolerationSeconds` so they are never evicted**.
 
 https://kubernetes.io/docs/reference/access-authn-authz/rbac/
 - **Highly recommended to read/watch the following link: https://www.cncf.io/blog/2018/08/01/demystifying-rbac-in-kubernetes/**
