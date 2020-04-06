@@ -1157,7 +1157,7 @@ https://kubernetes.io/docs/reference/access-authn-authz/rbac/
   - Roles: `Operations => API Resources`.
   - RoleBindings: `Role => Subects`.
   - ClusterRoles && ClusterRoleBindings are very similar but without namespaces (apply to the whole cluster)
-    - K8s comes with predefined ClusterRoleBindings, you can use themp (eg: add the group in the Orgnatization field of your certificate)
+    - K8s comes with predefined ClusterRoleBindings, you can use them (eg: add the group in the Orgnatization field of your certificate)
 ```yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
