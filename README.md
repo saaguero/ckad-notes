@@ -1186,4 +1186,5 @@ roleRef: # Only one role per binding!
 # Nice readings
 
 - https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
+- https://codeburst.io/kubernetes-ckad-weekly-challenges-overview-and-tips-7282b36a2681
 - https://killer.sh/course/preview/052229bd-1062-44a4-8aae-f50d0770165a
