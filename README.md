@@ -44,6 +44,7 @@
 ```markdown
 # Tmux: https://www.linode.com/docs/networking/ssh/persistent-terminal-sessions-with-tmux/
 - Prefix: ctrl+b
+- Optional: use <c-space> as prefix with: `set -g prefix 'C-Space'`
 - New-window: Prefix + c
 - Split-horizontal: Prefix + "
 - Split-vertical: Prefix + %
