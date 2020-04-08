@@ -124,12 +124,11 @@ kubectl get apiservices | grep metrics
 # run including a command!
 kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh -c 'echo $(date); sleep 3600'
 
-# run connectivity with timeout
-kubectl run curl --image=radial/busyboxplus -it --rm --restart=Never - curl -m 5 my-service:8080 # useful to include the 5 second timeout
-kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O- my-service:8080 
-# with netcat (nc)
-kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # 5 seconds timeout TCP test
-kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zuv my-service 8181  # 5 seconds timeout UDP test
+# run connectivity with timeout (5 seconds)
+kubectl run curl --image=radial/busyboxplus -it --rm --restart=Never - curl -m 5 my-service:8080 # curl
+kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O- my-service:8080 # wget
+kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # netcat TCP
+kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zuv my-service 8181  # netcat UDP
 
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
@@ -241,6 +240,26 @@ spec:
   - Ingress
 
 # Same cases for egress traffic (or both!)
+---
+
+# Bonus: how to keep DNS resolution support
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+spec:
+  podSelector:
+    matchLabels:
+      app: myapp
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP # TCP should be added as well: https://www.infoblox.com/dns-security-resource-center/dns-security-faq/is-dns-tcp-or-udp-port-53/
+      port: 53
 ```
 
 https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/
