@@ -124,8 +124,12 @@ kubectl get apiservices | grep metrics
 # run including a command!
 kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh -c 'echo $(date); sleep 3600'
 
+# run connectivity with timeout
 kubectl run curl --image=radial/busyboxplus -it --rm --restart=Never - curl -m 5 my-service:8080 # useful to include the 5 second timeout
 kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O- my-service:8080 
+# with netcat (nc)
+kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # 5 seconds timeout
+
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
 kubectl api-versions # https://akomljen.com/kubernetes-api-resources-which-group-and-version-to-use/
