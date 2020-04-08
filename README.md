@@ -33,9 +33,10 @@
 ## Random
 - https://en.wikipedia.org/wiki/Kibibyte
     - Name comes from the contraction `kilo binary byte`.
-    - 1 kibibyte = 1024 B = 2^10 bytes.
-    - 1 kilobyte = 1000 B = 10^3 bytes.
-    - kibibyte > kilobyte (in bytes)
+    - 1 kibibyte (KiB) = 1024 B = 2^10 bytes.
+    - 1 kilobyte (KB)  = 1000 B = 10^3 bytes.
+    - 1024 ^ 2 = 1 MiB ... 1024 ^ 3 = 1 GiB ...
+    - 1000 ^ 2 = 1 MB  ... 1000 ^ 3 = 1 GB  ...    
 
 ## tmux && screen
 - Prefer tmux (even if you have to install it). If not possible, fallback to screen.
