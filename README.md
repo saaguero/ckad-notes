@@ -130,6 +130,10 @@ kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O
 kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # netcat TCP
 kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zuv my-service 8181  # netcat UDP
 
+# Flush DNS (in case you are seeing issues after pointing a k8s service to a different location)
+kubectl get pod -n kube-system | grep dns
+kubectl delete pod <kube_dns_pods>
+
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
 kubectl api-versions # https://akomljen.com/kubernetes-api-resources-which-group-and-version-to-use/
