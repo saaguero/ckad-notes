@@ -128,7 +128,8 @@ kubectl run busybox --image=busybox --restart=Never --dry-run -o yaml -- /bin/sh
 kubectl run curl --image=radial/busyboxplus -it --rm --restart=Never - curl -m 5 my-service:8080 # useful to include the 5 second timeout
 kubectl run wget --image=busybox -it --rm --restart=Never -- wget --timeout 5 -O- my-service:8080 
 # with netcat (nc)
-kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # 5 seconds timeout
+kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zv my-service 8080  # 5 seconds timeout TCP test
+kubectl run wget --image=busybox -it --rm --restart=Never -- nc -w 5 -zuv my-service 8181  # 5 seconds timeout UDP test
 
 kubectl get pod mypod -o yaml --export > mypod.yaml # Export spec without status (WARN: does not include the namespace!)
 kubectl api-resources
