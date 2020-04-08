@@ -1185,7 +1185,8 @@ https://kubernetes.io/docs/reference/access-authn-authz/rbac/
   - Roles: `Operations => API Resources`.
   - RoleBindings: `Role => Subects`.
   - ClusterRoles && ClusterRoleBindings are very similar but without namespaces (apply to the whole cluster)
-    - K8s comes with predefined ClusterRoleBindings, you can use them (eg: add the group in the Orgnatization field of your certificate)
+    - K8s comes with predefined ClusterRoleBindings, you can use them (eg: add the group in the organization field of your certificate)
+  - Take advantage of `kubectl create [clusterrole|clusterrolebinding|role|rolebinding] -h`.
 ```yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -1203,12 +1204,16 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
   name: test
 subjects:
   - kind: Group # can be "user", "ServiceAccount"
-    name: devs
+    name: dev@user.com
     apiGroup: rbac.authorization.k8s.io
 roleRef: # Only one role per binding!
   kind: Role
   name: admin
   apiGroup: rbac.authorization.k8s.io
+---
+# Test it with:
+# kubectl auth can-i get pods --as dev@user.com
+# kubectl auth can-i "*" secret --as dev@user.com
 ```
 
 # Nice readings
