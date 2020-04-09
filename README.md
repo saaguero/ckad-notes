@@ -15,6 +15,7 @@
   - For Linux: select text for copy and `middle button` for paste (or both `left` and `right` simultaneously if you have no middle button.)
   - For Mac: `⌘+C` to copy and `⌘+V` to paste.
   - For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
+- Use `Ctrl+Alt+W` instead of `Ctrl+W`.
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
