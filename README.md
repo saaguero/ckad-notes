@@ -20,7 +20,7 @@
 - Candidates can confirm the time remaining with the proctor directly.
 
 ## Tips
-- Get used to the browser terminal: https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
+- Get used to the browser terminal: https://www.katacoda.com/courses/kubernetes/launch-single-node-cluster
 - Skip hard questions and come back to them later (flag it in the provided notepad)
 - Pay attention to the point value of the question. Skip difficult, low-value questions!
 - Use the documentation: https://kubernetes.io/docs
