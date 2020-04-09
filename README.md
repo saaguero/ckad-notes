@@ -690,15 +690,15 @@ https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   - `runAsGroup`, `runAsNonRoot`, `runAsUser`, `seLinuxOptions`.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
-- Processes/Filesystems are visible to other containers in the pod. This includes all information visible in `/proc`, `/proc/$pid/root`, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.
-- The container process no longer has `PID 1`, therefore some images will refuse to start without PID 1 (eg: systemd).
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
 spec:
-  shareProcessNamespace: true # This is the required field
+  shareProcessNamespace: true # this is the required field
+  # Processes/Filesystems will be visible to other containers in the pod, including  `/proc`, `/proc/$pid/root`.
+  # Watch out for passwords that were passed as arg or env. These are protected only by regular Unix permissions.
   containers:
   - name: nginx
     image: nginx
@@ -710,6 +710,18 @@ spec:
         - SYS_PTRACE # needed to send signal `kill -HUP 1` to the pod sandbox, `/pause` in this case.
     stdin: true
     tty: true
+---
+
+# The container process no longer has PID 1, therefore some images will refuse to start without PID 1 (eg: systemd).
+#
+# kubectl exec nginx -c shell -it -- ps
+#
+# PID   USER     TIME  COMMAND
+#     1 root      0:00 /pause
+#    14 root      0:00 sh
+#    36 root      0:00 nginx: master process nginx -g daemon off;
+#    42 101       0:00 nginx: worker process
+#    57 root      0:00 ps
 ```
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-initialization/
