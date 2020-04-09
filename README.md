@@ -685,7 +685,7 @@ https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 - Important ones in `pod.spec.containres.securityContext`:
   - `allowPrivilegeEscalation`: Controls whether a process can gain more privileges than its parent process. `True` always when the container is: 1) run as Privileged OR 2) has `CAP_SYS_ADMIN`.
   - `capabilities`: The capabilities to add/drop when running containers, eg: `capabilities.add: ["NET_ADMIN", "SYS_TIME"]`.
-  - privileged: Processes in privileged containers are equivalent to root on the host. Defaults to false.
+  - `privileged`: Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.
   - `readOnlyRootFilesystem`: Whether this container has a read-only root filesystem. Default is false.
   - `runAsGroup`, `runAsNonRoot`, `runAsUser`, `seLinuxOptions`.
 
