@@ -19,7 +19,7 @@
 - Candidates can confirm the time remaining with the proctor directly.
 
 ## Tips
-- For getting the feeling about the browser terminal: https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
+- Get used to the browser terminal: https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
 - Skip hard questions and come back to them later (flag it in the provided notepad)
 - Pay attention to the point value of the question. Skip difficult, low-value questions!
 - Use the documentation: https://kubernetes.io/docs
