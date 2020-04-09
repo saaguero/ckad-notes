@@ -770,10 +770,10 @@ https://kubernetes.io/docs/concepts/workloads/controllers/deployment
 https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/
 - Directly accessing the REST API:
   - Use `kubectl proxy --port=8080`, then do `curl http://localhost:8080/api`
-  - This is recommended instead of doing it manually becaues it verifies identity of apiserver using self-signed cert, so no MITM attacks are possible. It will authenticate to `apiserver` and in the future it may do intelligent client-side local-balancing and failover.
+  - This is recommended instead of doing it manually because it verifies identity of apiserver using self-signed cert, so no MITM attacks are possible. It will authenticate to `apiserver` and in the future it may do intelligent client-side local-balancing and failover.
 - Accesing the API from a Pod:
   - `kubernetes.default.svc` resolves to a `Service IP` which in turn will be routed to an apiserver.
-  - Run `kubectl proxy` in a sidecar containers in the pod or as a background process within the container.
+  - Run `kubectl proxy` in a sidecar container in the pod or as a background process within the container.
   - Or use a k8s client library like Go, they will handle locating and authenticating to the apiserver.
   - Either case will use the credentials of the pod `/var/run/secrets/kubernetes.io/serviceaccount/*`.
 - Accessing services running on the cluster:
@@ -1237,8 +1237,8 @@ roleRef: # Only one role per binding!
 # kubectl auth can-i "*" secret --as dev@user.com
 ```
 
-# Nice readings
+# Read and do all the exercises from
 
-- https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
+- https://github.com/dgkanatsios/CKAD-exercises
 - https://codeburst.io/kubernetes-ckad-weekly-challenges-overview-and-tips-7282b36a2681
-- https://killer.sh/course/preview/052229bd-1062-44a4-8aae-f50d0770165a
+- https://codeburst.io/the-ckad-browser-terminal-10fab2e8122e
