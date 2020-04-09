@@ -612,7 +612,7 @@ volumes:
 - name: config-volume
   configMap:
     name: special-config
-    items:
+    items: # optional
     - key: MY_KEY_1
       path: key_1
 ```
@@ -631,16 +631,19 @@ volumes:
 - name: foo
   secret:
     secretName: mysecret
-    items:
+    items: # optional
     - key: username
       path: my-group/my-username
       mode: 0777 # 511 in decimal in case you use json
+---
+
+# env.valueFrom.secretKeyRef && envFrom.secretRef can be used with secrets as well
 ```
 - If `.spec.volumes[].secret.items` is used, only keys specified in items are projected. To consume all keys from the secret, all of them must be listed. All listed keys must exist in the corresponding secret. Otherwise, the volume is not created.
 - Inside the container that mounts a secret volume, the secret keys appear as files and the secret values are `base64 decoded`.
   - Linux users should use the base64 command as `base64 -w 0`.
 - Secret resources reside in a namespace. `Secrets can only be referenced by Pods in that same namespace`.
-- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the `ConfigMapAndSecretChangeDetectionStrategy` field in the `KubeletConfiguration` struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the `kubelet sync period + cache propagation delay`, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
+- When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync.The type of the cache is configurable using the `ConfigMapAndSecretChangeDetectionStrategy` field in the `KubeletConfiguration` struct.
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 
