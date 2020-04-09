@@ -15,7 +15,7 @@
   - For Linux: select text for copy and `middle button` for paste (or both `left` and `right` simultaneously if you have no middle button.)
   - For Mac: `⌘+C` to copy and `⌘+V` to paste.
   - For Windows: `Ctrl+Insert` to copy and `Shift+Insert` to paste.
-- Use `Ctrl+Alt+W` instead of `Ctrl+W`.
+- Use `Ctrl+Alt+W` or `Esc+Backspace` instead of `Ctrl+W` to remove words.
 - Issues with wrapped text within the terminal pane may be resolved by resizing your browser window temporarily.
 - Candidates can confirm the time remaining with the proctor directly.
 
@@ -120,6 +120,9 @@ alias k=kubectl
 alias kn="kubectl config set-context --current --namespace"
 source <(kubectl completion bash)
 complete -F __start_kubectl k                       
+
+# quickly visit k8s resource documentation (really recommended you master it)
+kubectl explain [k8s_resource_path] # example: kubectl explain pod.spec.volumes
 
 # check if metric-server is installed
 kubectl get apiservices | grep metrics
