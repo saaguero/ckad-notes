@@ -82,15 +82,13 @@
 grep -Hnri # grep: print file name, print line number, recursive, ignore-case
 
 # vim
-set shiftwidth=2 softtabstop=2 tabstop=2
-set tabstop=2
-set expandtab
-set list
-retab # in case you have mixed <tabs> and <spaces>
+set expandtab tabstop=2 shiftwidth=2 softtabstop=2 incsearch
+set list # to check if you have a mixed of <tabs> and <spaces>
+retab # to fix in case you have a mixed of <tabs> and <spaces>
 
 # ubuntu
 apt update
-apt install net-tools dnsutils
+apt install net-tools dnsutils procps
 
 # wget
 wget -qO- <link> # quiet, output to - (stdout)
@@ -123,6 +121,9 @@ complete -F __start_kubectl k
 
 # quickly visit k8s resource documentation (really recommended you master it)
 kubectl explain [k8s_resource_path] # example: kubectl explain pod.spec.volumes
+
+# useful to sort by timestamp when watching events
+kubectl get events --sort-by .lastTimestamp # add -w to watch it
 
 # check if metric-server is installed
 kubectl get apiservices | grep metrics
