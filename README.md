@@ -31,14 +31,6 @@
 
 # Cheatsheet
 
-## Random
-- https://en.wikipedia.org/wiki/Kibibyte
-    - Name comes from the contraction `kilo binary byte`.
-    - 1 kibibyte (KiB) = 1024 B = 2^10 bytes.
-    - 1 kilobyte (KB)  = 1000 B = 10^3 bytes.
-    - 1024 ^ 2 = 1 MiB ... 1024 ^ 3 = 1 GiB ...
-    - 1000 ^ 2 = 1 MB  ... 1000 ^ 3 = 1 GB  ...    
-
 ## tmux && screen
 - Prefer tmux (even if you have to install it). If not possible, fallback to screen.
 
@@ -553,6 +545,15 @@ https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/
 - The memory resource is measured in bytes. You can express memory as a plain integer or a fixed-point integer with one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
 - If you do not specify a memory limit for a Container, the Container has no upper bound on the amount of memory it uses. The Container could use all of the memory available on the Node where it is running which in turn could invoke the `OOM Killer`. Further, in case of an OOM (out-of-memory) Kill, a container with no resource limits will have a greater chance of being killed; or the Container is running in a namespace that has a default memory limit, and the Container is automatically assigned the default limit. Cluster administrators can use a `LimitRange` to specify a default value for the memory limit.
 - Besides describing or seeing the status of a Pod, you can also run `kubectl describe nodes` and search for `OOMKilling`.
+
+- **WARN**: Take into account that `Ki != K`, see: https://en.wikipedia.org/wiki/Kibibyte
+  - Name comes from the contraction `kilo binary byte`.
+  - 1 kibibyte (KiB) = 1024 B = 2^10 bytes.
+  - 1 kilobyte (KB)  = 1000 B = 10^3 bytes.
+  - 1024 ^ 2 = 1 MiB ... 1024 ^ 3 = 1 GiB ...
+  - 1000 ^ 2 = 1 MB  ... 1000 ^ 3 = 1 GB  ...
+  - If you run `kubectl run bash --image=bash --restart=Never --requests=memory=1000` and then `kubectl describe pod bash | grep memory` it prints `memory: 1k` (that is, 1 KB and **not** 1 KiB)
+
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/
 - When you are creating a ConfigMap based on a file, the key in the `data-source` defaults to the filename, and the value defaults to the file content.
