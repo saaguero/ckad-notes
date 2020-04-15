@@ -387,12 +387,13 @@ spec:
     volumeMounts:
     - name: workdir1
       mountPath: /logs
-      subPathExpr: $(POD_NAME)
+      subPathExpr: $(POD_NAME) # Mounted as /logs => /tmp/pods/pod1/
   restartPolicy: Never
   volumes:
   - name: workdir1
     hostPath:
-      path: /var/log/pods
+      path: /tmp/pods
+      type: DirectoryOrCreate
 ```
 
 https://kubernetes.io/docs/concepts/storage/persistent-volumes/
