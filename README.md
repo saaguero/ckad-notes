@@ -75,8 +75,8 @@ grep -Hnri # grep: print file name, print line number, recursive, ignore-case
 
 # vim
 set expandtab tabstop=2 shiftwidth=2 softtabstop=2 incsearch
-set list # to check if you have a mixed of <tabs> and <spaces>
-retab # to fix in case you have a mixed of <tabs> and <spaces>
+set list # to check if you have a mix of <tabs> and <spaces>
+retab # to fix in case you have a mix of <tabs> and <spaces>
 
 # ubuntu
 apt update
@@ -146,7 +146,7 @@ kubectl port-forward my-pod 5000:6000 # Listen on port 5000 on the local machine
 kubectl top pod POD_NAME --containers # Show metrics for a given pod and its containers
 kubectl logs --previous (also works with deploy/job)
 
-kubectl set image deployment/<deploy> <container_name>=<new_image> --record  # Rolling update & Rollbacks (remember to include the flag --record so be able to rollback)
+kubectl set image deployment/<deploy> <container_name>=<new_image> --record  # Rolling update & Rollbacks
 kubectl rollout history [--revision <rev>]
 kubectl rollout undo deployment/<deploy> [--to-revision=<rev>]
 
