@@ -8,8 +8,8 @@ Table of Contents
 * [Cheatsheet](#cheatsheet)
   * [tmux](#tmux)
   * [various tools](#various-tools)
+  * [k8s](#k8s)
   * [yaml](#yaml)
-  * [k8s](#k8s)  
 * [Docs to study](#docs-to-study)
   * [Must study](#must-study)
   * [Recommended](#recommended)
@@ -1251,6 +1251,8 @@ roleRef: # Only one role per binding!
 ```
 
 # Exercises
+
+It is highly recommended to do do all the exercises from the following links:
 
 - https://github.com/dgkanatsios/CKAD-exercises
 - https://codeburst.io/kubernetes-ckad-weekly-challenges-overview-and-tips-7282b36a2681
