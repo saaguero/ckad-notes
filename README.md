@@ -1,6 +1,26 @@
+Table of Contents
+=================
+
+* [Important](#important)
+  * [Certificate](#certificate)
+  * [What can we do](#what-can-we-do)
+  * [Tips](#tips)
+* [Cheatsheet](#cheatsheet)
+  * [tmux](#tmux)
+  * [various tools](#various-tools)
+  * [k8s](#k8s)
+  * [yaml](#yaml)
+* [Docs to study](#docs-to-study)
+  * [Must study](#must-study)
+  * [Recommended](#recommended)
+* [Docs that may be out\-of\-scope for CKAD](#docs-that-may-be-out-of-scope-for-ckad)
+* [Exercises](#exercises)
+
 # Important
 
-## Cert
+Most of the following notes were taken from the exam resources in the official CKAD page: https://www.cncf.io/certification/ckad/.
+
+## Certificate
 - The Candidate must contact the Exam Proctoring Partner’s Support team within 15 minutes of the scheduled start time for their reservation to report an issue. Otherwise, they will be markedas a "No Show" for the Exam
 - Candidate is not allowed to read the questions out loud, to themselves, during the exam
 - Candidate is permitted to drink clear liquids from a label-free clear bottle or a clear glass
@@ -31,8 +51,7 @@
 
 # Cheatsheet
 
-## tmux && screen
-- Prefer tmux (even if you have to install it). If not possible, fallback to screen.
+## tmux
 
 ```markdown
 # Tmux: https://www.linode.com/docs/networking/ssh/persistent-terminal-sessions-with-tmux/
@@ -49,23 +68,6 @@
 ## Inside tmux
 - set mouse # for copy/paste with `Prefix + [` and `Prefix + ]`
 - set synchronize-panes
-```
-
-```markdown
-# Screen: https://gist.github.com/jctosta/af918e1618682638aa82
-- Prefix: ctrl-a
-- New-window: Prefix + c
-- Move between windows: Prefix + n || Prefix + p || Prefix + " || Prefix + <number>
-- Kill window: Prefix + k
-- Split-horizontal: Prefix + S
-- Split-vertical: Prefix + |
-- Move between splits: Prefix + tab (You need to create a New-window in a new split, with Prefix + c)
-- Detach: Prefix + d
-
-- List sessions: screen -ls
-- Attach running session: screen -x
-- Attach session with name: screen -r <session_name>
-- New session with name: screen -S <session_name>
 ```
 
 ## various tools
@@ -102,6 +104,29 @@ wget --spider <link> # just check the page is there
 # Example: https://crontab.guru/
 # */1 * * * * => every minute
 # 1   * * * * => at minute 1 (18:01, 19:01...)
+```
+
+## yaml
+```yaml
+# https://stackoverflow.com/questions/3790454/how-do-i-break-a-string-over-multiple-lines
+
+# Usually you want a line continuation, use >:
+key: >
+  Your long
+  string here.
+
+# If you want the linebreaks to be preserved as \n in the string (for instance, embedded markdown with paragraphs), use |.
+key: |
+  ### Heading
+
+  * Bullet
+  * Points
+
+# If you need to split lines in the middle of words or literally type linebreaks as \n, use double quotes instead:
+key: "Antidisestab\
+ lishmentarianism.\n\nGet on it."
+
+# HINT: Use >- or |- instead if you don't want a linebreak appended at the end.
 ```
 
 ## k8s  
@@ -153,36 +178,15 @@ kubectl rollout undo deployment/<deploy> [--to-revision=<rev>]
 kubectl describe networkpolicies # very useful to see the ingress/egress rules
 ```
 
-## yaml
-```yaml
-# https://stackoverflow.com/questions/3790454/how-do-i-break-a-string-over-multiple-lines
-
-# Usually you want a line continuation, use >:
-key: >
-  Your long
-  string here.
-
-# If you want the linebreaks to be preserved as \n in the string (for instance, embedded markdown with paragraphs), use |.
-key: |
-  ### Heading
-
-  * Bullet
-  * Points
-
-# If you need to split lines in the middle of words or literally type linebreaks as \n, use double quotes instead:
-key: "Antidisestab\
- lishmentarianism.\n\nGet on it."
-
-# HINT: Use >- or |- instead if you don't want a linebreak appended at the end.
-```
-
 # Docs to study
 
 Most of the links were taken from:
 - https://github.com/dgkanatsios/CKAD-exercises
 - https://github.com/twajr/ckad-prep-notes#tasks-from-kubernetes-doc
 
-## P1
+## Must study
+
+The following links are the ones you really need to learn.
 
 https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 - Must read, come here many times until you grasp every tip.
@@ -829,7 +833,9 @@ https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
     1. If `kube-proxy` is in `iptables` mode, check them with `iptables-save | grep hostnames`, for each port of each Service, there should be 1 rule in `KUBE-SERVICES`.
 
 
-## P2
+## Recommended
+
+The following links are useful to familiarize with kubernetes. At the very least, read them one time.
 
 https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/
 - If the pod does not have a `ServiceAccount` set, it sets it to `default`.
@@ -900,6 +906,8 @@ https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-
 https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 
 # Docs that may be out-of-scope for CKAD
+
+The following links are most likely not going to be tested in the CKAD exam. Nevertheless, it doesn't hurt knowing a little bit about them.
 
 https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
 - Like a `Deployment`, a `StatefulSet` manages Pods that are based on an identical container spec. Unlike a Deployment, a StatefulSet maintains a `sticky identity` for each of their Pods.
@@ -1242,7 +1250,7 @@ roleRef: # Only one role per binding!
 # kubectl auth can-i "*" secret --as dev@user.com
 ```
 
-# Read and do all the exercises from
+# Exercises
 
 - https://github.com/dgkanatsios/CKAD-exercises
 - https://codeburst.io/kubernetes-ckad-weekly-challenges-overview-and-tips-7282b36a2681
