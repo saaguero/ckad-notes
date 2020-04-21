@@ -1251,7 +1251,7 @@ roleRef: # Only one role per binding!
 
 # Exercises
 
-It is highly recommended to do do all the exercises from the following links:
+Highly recommended to do all the exercises from the following links:
 
 - https://github.com/dgkanatsios/CKAD-exercises
 - https://codeburst.io/kubernetes-ckad-weekly-challenges-overview-and-tips-7282b36a2681
