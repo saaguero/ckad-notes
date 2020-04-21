@@ -18,9 +18,8 @@ Table of Contents
 
 # Important
 
-Most of the following notes were taken from the exam resources in the official CKAD page: https://www.cncf.io/certification/ckad/.
-
 ## Certificate
+- Don't forget to read the exam resources in the official CKAD page: https://www.cncf.io/certification/ckad/.
 - The Candidate must contact the Exam Proctoring Partner’s Support team within 15 minutes of the scheduled start time for their reservation to report an issue. Otherwise, they will be markedas a "No Show" for the Exam
 - Candidate is not allowed to read the questions out loud, to themselves, during the exam
 - Candidate is permitted to drink clear liquids from a label-free clear bottle or a clear glass
