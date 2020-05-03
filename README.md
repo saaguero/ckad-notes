@@ -2,7 +2,8 @@ Table of Contents
 =================
 
 * [Important](#important)
-  * [Certificate](#certificate)
+  * [My experience and tips](#my-experience-and-tips)
+  * [Certificate](#certificate) 
   * [What can we do](#what-can-we-do)
   * [Tips](#tips)
 * [Cheatsheet](#cheatsheet)
@@ -17,6 +18,9 @@ Table of Contents
 * [Exercises](#exercises)
 
 # Important
+
+## My experience and tips
+Here is a video I created with my experience plus tips for a better exam preparation: https://youtu.be/qA4dNATs5nE.
 
 ## Certificate
 - Don't forget to read the exam resources in the official CKAD page: https://www.cncf.io/certification/ckad/.
